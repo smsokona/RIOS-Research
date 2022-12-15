@@ -1,0 +1,73 @@
+---
+title: "RIOS Research"
+output: html_document
+date: "2022-12-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r loading data}
+#install.packages("skimr")
+#install.packages("tidyverse")
+library(skimr)
+library(tidyverse)
+library(ggplot2)
+library(readr)
+rios_data <- read_csv("RIOS Research - Course Source - Sheet1 2.csv")
+rios_data$`Inclusive Teaching  included?`[12] = "No"
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
+
+#rios_data %>% 
+ # filter(`keyword themes` %in% diversity_related)
+
+
+
+```
+
+```{r}
+#word count over time plot 
+#rios_data %>%
+ # ggplot(aes(rios_data$Year, rios_data$`Word Count of Inclusive Teaching?`)) + 
+  #  geom_boxplot(na.rm = TRUE) +
+   # labs(x = "Year", y = "Word count of Inclusive Teaching Section",
+  #title = "Word Count of Inlcusive Teaching Sections Over Time")
+
+
+  boxplot(`Word Count of Inclusive Teaching?`~Year,
+          data=rios_data,
+          main="Word Count of Inlcusive Teaching Sections Over Time",
+          xlab="Year",
+          ylab="Word count of Inclusive Teaching Section",
+          horizontal = TRUE)
+
+
+
+```
+
+
+
+
+```{r}
+test <- "chiasma formation"
+
+rios_data$`keyword themes`[2] %in% test
+
+
+```
