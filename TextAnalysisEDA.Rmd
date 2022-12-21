@@ -17,29 +17,22 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r loading data}
 #install.packages("skimr")
 #install.packages("tidyverse")
+#install.packages("tidytext")
+#install.packages("stopwords")
 library(skimr)
 library(tidyverse)
+library(tidytext)
 library(ggplot2)
 library(readr)
+library(stopwords)
 rios_data <- read_csv("RIOS Research - Course Source - Sheet1 2.csv")
+dei_keywords <- read_csv("SJEDI_words 2022-12-20 18_03_42.csv")
 rios_data$`Inclusive Teaching  included?`[12] = "No"
 
 ```
 
-## Including Plots
+## Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-
-diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
-
-#rios_data %>% 
- # filter(`keyword themes` %in% diversity_related)
-
-
-
-```
 
 ```{r}
 #word count over time plot 
@@ -62,12 +55,48 @@ diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias
 ```
 
 
+```{r text cleaning, echo=FALSE}
+
+diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
+
+#test1 <- rios_data$`Inclusive Teaching Description`[1]
+#grepl(dei_keywords$SJEDI_keyword[3], test1)
 
 
-```{r}
-test <- "chiasma formation"
+#getting an error for the code below...
+#for (x in len(diversity_related)){
+ # print(sum(grepl(diversity_related[x], test1)))
+#}
 
-rios_data$`keyword themes`[2] %in% test
 
+example <- tibble(text = test1) #bring the data into a form that facilitates manipulation: a tibble
+
+example %>% 
+  pull(text) %>% 
+  str_split(pattern = " ")
+
+words <- example %>%
+  unnest_tokens(output = words, 
+                input = text)
+
+#applying to df to see output 
+rios_data_tokenized <- rios_data %>%
+  unnest_tokens(output = Words, input = `Inclusive Teaching Description`)
+
+#glimpse(rios_data_tokenized)
+
+#removing all rows with any punctuation, digits, or "stopwords" (~20k rows total)
+strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
+stopwords_vec <- stopwords(language = "en")
+
+#removed ~777 rows
+rios_data_tokenized <- rios_data_tokenized %>%
+  filter(!str_detect(Words, paste(strings, collapse = "|")))
+
+#removed ~19,663 rows
+rios_data_tokenized <- rios_data_tokenized %>%
+  filter(!Words %in% stopwords_vec) 
 
 ```
+
+
