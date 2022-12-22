@@ -19,19 +19,158 @@ When you click the **Knit** button a document will be generated that includes bo
 #install.packages("tidyverse")
 #install.packages("tidytext")
 #install.packages("stopwords")
+#install.packages("wordcloud")
+#install.packages("reshape2")
 library(skimr)
 library(tidyverse)
 library(tidytext)
 library(ggplot2)
 library(readr)
 library(stopwords)
+library(wordcloud)
+library(reshape2)
 rios_data <- read_csv("RIOS Research - Course Source - Sheet1 2.csv")
 dei_keywords <- read_csv("SJEDI_words 2022-12-20 18_03_42.csv")
 rios_data$`Inclusive Teaching  included?`[12] = "No"
+rios_data <- rios_data %>%
+  arrange(desc(Year))
 
 ```
 
-## Plots
+## some Data Cleaning/EDA
+
+
+```{r text cleaning, echo=FALSE}
+#diversity related words from the 'keyword themes' column!
+diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
+
+#adding the vector above to the CSV dei_keywords
+for (x in 1:13){
+  dei_keywords[nrow(dei_keywords) + 1,] = diversity_related[x]
+}
+
+rios_data$article_num <- c(1:nrow(rios_data))
+
+#example <- tibble(text = test1) #bring the data into a form that facilitates manipulation: a tibble
+
+#example %>% 
+ # pull(text) %>% 
+  #str_split(pattern = " ")
+
+#words <- example %>%
+ # unnest_tokens(output = words, 
+  #              input = text)
+
+#applying to df to see output 
+rios_data_tokenizedit <- rios_data %>%
+  unnest_tokens(output = inclusive_teach_tokens, input = `Inclusive Teaching Description`)
+
+#glimpse(rios_data_tokenized)
+
+#removing all rows with any punctuation, digits, or "stopwords" (~20k rows total)
+strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
+stopwords_vec <- stopwords(language = "en")
+
+#removed ~777 rows
+rios_data_tokenizedit <- rios_data_tokenizedit %>%
+  filter(!str_detect(inclusive_teach_tokens, paste(strings, collapse = "|")))
+
+#removed ~19,663 rows
+rios_data_tokenizedit <- rios_data_tokenizedit %>%
+  filter(!inclusive_teach_tokens %in% stopwords_vec) 
+
+#doing same thing as above but for keyword themes
+rios_data_tokenizedkt <- rios_data %>%
+  unnest_tokens(output = keyword_themes_tokens, input = `keyword themes`)
+
+
+#removing all rows with any punctuation, digits, or "stopwords" (78 rows total)
+strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
+stopwords_vec <- stopwords(language = "en")
+
+#removed ~777 rows
+rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
+  filter(!str_detect(keyword_themes_tokens, paste(strings, collapse = "|")))
+
+#removed ~19,663 rows
+rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
+  filter(!keyword_themes_tokens %in% stopwords_vec) 
+
+
+```
+
+```{r some more EDA}
+
+#creating a DEI related column
+rios_data_tokenizedit$dei_relatedit = NA
+
+rios_data_tokenizedkt$dei_relatedkt = NA
+
+rios_data_tokenizedit$dei_relatedit <- sapply(rios_data_tokenizedit$inclusive_teach_tokens, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+rios_data_tokenizedkt$dei_relatedkt <- sapply(rios_data_tokenizedkt$keyword_themes_tokens, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+#save(dei_keywords, file = "dei_keywords.csv")
+#saveRDS(rios_data_tokenized, file = "rios_data_tokenized.rds")
+
+#removing the unnnecessary columns
+rios_data_tokenizedit <- rios_data_tokenizedit[,-c(9:13)]
+rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
+
+
+#most common words
+rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(Year, article_num, inclusive_teach_tokens) %>%
+  count(inclusive_teach_tokens, sort = TRUE)
+
+#dei_related words don't necessarily have the dei related keyword themes
+rios_data_tokenizedkt %>%
+  filter(dei_relatedkt == "TRUE") %>%
+  group_by(Year, article_num, keyword_themes_tokens) %>%
+  count(keyword_themes_tokens, sort = TRUE)
+
+#saving for visuals on word counts, etc
+it_word_counts <- rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(Year, inclusive_teach_tokens) %>%
+  count(inclusive_teach_tokens, sort = TRUE)
+
+#which articles and years has the highest proportion of DEI related words?
+#find the # of dei related words in each article/year and divide by the total words in each article/year
+
+#totaldei for each year
+it_word_counts %>%
+  group_by(Year) %>%
+  summarise(totaldeiy = sum(n))
+
+#totaldei for each article
+rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(article_num) %>%
+  count(inclusive_teach_tokens) %>%
+  summarise(totaldeia = sum(n)) %>%
+  arrange(desc(totaldeia))
+
+#total words in each year
+
+#total words in each article
+
+#proportion
+tidy_books %>%
+  semi_join(bingnegative) %>%
+  group_by(book, chapter) %>%
+  summarize(negativewords = n()) %>%
+  left_join(wordcounts, by = c("book", "chapter")) %>%
+  mutate(ratio = negativewords/words) %>%
+  filter(chapter != 0) %>%
+  top_n(1)
+
+
+
+```
+
+## Visuals :)
 
 
 ```{r}
@@ -54,76 +193,33 @@ rios_data$`Inclusive Teaching  included?`[12] = "No"
 
 ```
 
+```{r plot time!, warning=FALSE}
 
-```{r text cleaning, echo=FALSE}
-#diversity related words from the 'keyword themes' column!
-diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
+#it_word_counts is defined in chunk 4
 
-#adding the vector above to the CSV dei_keywords
-for (x in 1:13){
-  dei_keywords[nrow(dei_keywords) + 1,] = diversity_related[x]
-}
+#umm...
+ggplot(it_word_counts, aes(inclusive_teach_tokens, n, fill = Year)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  facet_wrap(~Year, ncol = 2, scales = "free_x")
 
-rios_data$article_num <- c(1:nrow(rios_data))
-example <- tibble(text = test1) #bring the data into a form that facilitates manipulation: a tibble
+#better (w/o facet wrap), but only includes ~22% of data! (b/c we filtered for n > 5)
+it_word_counts %>%
+  filter(n > 5) %>%
+  ggplot(aes(inclusive_teach_tokens, n, fill = Year)) +
+  geom_col() +
+  coord_flip() +
+  labs(y = "(DEI Related) Word Count in Inclusive Teaching Text") +
+  facet_wrap(~Year)
 
-example %>% 
-  pull(text) %>% 
-  str_split(pattern = " ")
-
-words <- example %>%
-  unnest_tokens(output = words, 
-                input = text)
-
-#applying to df to see output 
-rios_data_tokenized <- rios_data %>%
-  unnest_tokens(output = Words, input = `Inclusive Teaching Description`)
-
-#glimpse(rios_data_tokenized)
-
-#removing all rows with any punctuation, digits, or "stopwords" (~20k rows total)
-strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
-stopwords_vec <- stopwords(language = "en")
-
-#removed ~777 rows
-rios_data_tokenized <- rios_data_tokenized %>%
-  filter(!str_detect(Words, paste(strings, collapse = "|")))
-
-#removed ~19,663 rows
-rios_data_tokenized <- rios_data_tokenized %>%
-  filter(!Words %in% stopwords_vec) 
-
-```
-
-```{r}
-#EDA of words 
-
-rios_data_tokenized %>%
-  group_by(article_num, Words) %>%
-  count(Words, sort = TRUE)
-
-SJEDI_words_2022_12_20_18_03_42$dei_related = NA
-
-SJEDI_words_2022_12_20_18_03_42 %>%
-  mutate(dei_related = case_when(
-    str_detect(Test2, SJEDI_words_2022_12_20_18_03_42$SJEDI_keyword[y]) ~ "Yes",
-    TRUE ~ "No"
-    )
-  )
-
-dei_keywords$dei_related = NA
-
-sapply(Test2, function(x) any(sapply(SJEDI_words_2022_12_20_18_03_42, str_detect, string = x)))
+#cool! but why are some words showing up twice? (ex.. identities, engage, abilities, diverse)
+it_word_counts %>%
+  with(wordcloud(inclusive_teach_tokens, n))
 
 
-str_detect(Test2, paste(SJEDI_words_2022_12_20_18_03_42, collapse = '|'))
-
-  for (y in 1:44) {
-    dei_keywords$dei_related[y] = ifelse(sapply(Test2, function(x) any(sapply(dei_keywords[y,1], str_detect, string = x))), "Yes", "No")
-  }
-
-d = toString(dei_keywords[33,1])
-str_detect(Test2[45],d) #test2[45] = "bias"
+#??? too many years! and not color blind friendly
+it_word_counts %>%
+  acast(inclusive_teach_tokens ~ Year, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("#fbb4ae", "#b3cde3", "#ccebc5", "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd", "#fddaec", "#f2f2f2"))
 
 ```
 
