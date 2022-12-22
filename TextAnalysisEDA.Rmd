@@ -56,19 +56,15 @@ rios_data$`Inclusive Teaching  included?`[12] = "No"
 
 
 ```{r text cleaning, echo=FALSE}
-
+#diversity related words from the 'keyword themes' column!
 diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
 
-#test1 <- rios_data$`Inclusive Teaching Description`[1]
-#grepl(dei_keywords$SJEDI_keyword[3], test1)
+#adding the vector above to the CSV dei_keywords
+for (x in 1:13){
+  dei_keywords[nrow(dei_keywords) + 1,] = diversity_related[x]
+}
 
-
-#getting an error for the code below...
-#for (x in len(diversity_related)){
- # print(sum(grepl(diversity_related[x], test1)))
-#}
-
-
+rios_data$article_num <- c(1:nrow(rios_data))
 example <- tibble(text = test1) #bring the data into a form that facilitates manipulation: a tibble
 
 example %>% 
@@ -98,5 +94,38 @@ rios_data_tokenized <- rios_data_tokenized %>%
   filter(!Words %in% stopwords_vec) 
 
 ```
+
+```{r}
+#EDA of words 
+
+rios_data_tokenized %>%
+  group_by(article_num, Words) %>%
+  count(Words, sort = TRUE)
+
+SJEDI_words_2022_12_20_18_03_42$dei_related = NA
+
+SJEDI_words_2022_12_20_18_03_42 %>%
+  mutate(dei_related = case_when(
+    str_detect(Test2, SJEDI_words_2022_12_20_18_03_42$SJEDI_keyword[y]) ~ "Yes",
+    TRUE ~ "No"
+    )
+  )
+
+dei_keywords$dei_related = NA
+
+sapply(Test2, function(x) any(sapply(SJEDI_words_2022_12_20_18_03_42, str_detect, string = x)))
+
+
+str_detect(Test2, paste(SJEDI_words_2022_12_20_18_03_42, collapse = '|'))
+
+  for (y in 1:44) {
+    dei_keywords$dei_related[y] = ifelse(sapply(Test2, function(x) any(sapply(dei_keywords[y,1], str_detect, string = x))), "Yes", "No")
+  }
+
+d = toString(dei_keywords[33,1])
+str_detect(Test2[45],d) #test2[45] = "bias"
+
+```
+
 
 
