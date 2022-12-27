@@ -1,5 +1,6 @@
 ---
-title: "RIOS Research"
+title: "RIOS Research - Inclusive Teaching Text Analysis"
+author: "Sokona Mangane"
 output: html_document
 date: "2022-12-14"
 ---
@@ -8,11 +9,7 @@ date: "2022-12-14"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Setup/Data Cleaning
 
 ```{r loading data}
 #install.packages("skimr")
@@ -21,6 +18,9 @@ When you click the **Knit** button a document will be generated that includes bo
 #install.packages("stopwords")
 #install.packages("wordcloud")
 #install.packages("reshape2")
+#install.packages("ggraph")
+library(ggraph)
+library(igraph)
 library(skimr)
 library(tidyverse)
 library(tidytext)
@@ -36,8 +36,6 @@ rios_data <- rios_data %>%
   arrange(desc(Year))
 
 ```
-
-## some Data Cleaning/EDA
 
 
 ```{r text cleaning, echo=FALSE}
@@ -70,6 +68,7 @@ rios_data_tokenizedit <- rios_data %>%
 #removing all rows with any punctuation, digits, or "stopwords" (~20k rows total)
 strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
 stopwords_vec <- stopwords(language = "en")
+stopwords_vec <- stopwords_vec[-c(165:167)]
 
 #removed ~777 rows
 rios_data_tokenizedit <- rios_data_tokenizedit %>%
@@ -99,6 +98,9 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
 
 ```
 
+## EDA
+
+
 ```{r some more EDA}
 
 #creating a DEI related column
@@ -118,13 +120,13 @@ rios_data_tokenizedit <- rios_data_tokenizedit[,-c(9:13)]
 rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 
-#most common words
+#most common DEI words
 rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
   group_by(Year, article_num, inclusive_teach_tokens) %>%
   count(inclusive_teach_tokens, sort = TRUE)
 
-#dei_related words don't necessarily have the dei related keyword themes
+#the most common dei_related words don't necessarily have the same dei related keyword themes
 rios_data_tokenizedkt %>%
   filter(dei_relatedkt == "TRUE") %>%
   group_by(Year, article_num, keyword_themes_tokens) %>%
@@ -140,12 +142,12 @@ it_word_counts <- rios_data_tokenizedit %>%
 #find the # of dei related words in each article/year and divide by the total words in each article/year
 
 #totaldei for each year
-it_word_counts %>%
+totaldeiyear <- it_word_counts %>%
   group_by(Year) %>%
   summarise(totaldeiy = sum(n))
 
-#totaldei for each article
-rios_data_tokenizedit %>%
+#totaldei for each article, only 251 obs, so some articles don't have any dei related words (30 articles with no Inclusive Teaching Section...)
+totaldeiarticle <- rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
   group_by(article_num) %>%
   count(inclusive_teach_tokens) %>%
@@ -153,18 +155,26 @@ rios_data_tokenizedit %>%
   arrange(desc(totaldeia))
 
 #total words in each year
+totalwordsyear <- rios_data %>%
+  group_by(Year) %>%
+  summarise(totaly = sum(`Word Count of Inclusive Teaching?`, na.rm = TRUE))
 
 #total words in each article
+totalwordsarticle <- rios_data %>%
+  select(15,9)
+  
 
-#proportion
-tidy_books %>%
-  semi_join(bingnegative) %>%
-  group_by(book, chapter) %>%
-  summarize(negativewords = n()) %>%
-  left_join(wordcounts, by = c("book", "chapter")) %>%
-  mutate(ratio = negativewords/words) %>%
-  filter(chapter != 0) %>%
-  top_n(1)
+#proportions for each year, fluctuating 
+totaldeiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly)%>%
+  arrange(desc(ratio))
+
+#proportions for each article, also fluctuating (higher article # means it happened earlier ex: article # 270 = year 2014)
+totaldeiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/`Word Count of Inclusive Teaching?`) %>%
+  arrange(desc(ratio))
 
 
 
@@ -193,35 +203,155 @@ tidy_books %>%
 
 ```
 
+The x axis is very crowded!
+
 ```{r plot time!, warning=FALSE}
 
-#it_word_counts is defined in chunk 4
+#it_word_counts is defined in chunk 4!
 
-#umm...
-ggplot(it_word_counts, aes(inclusive_teach_tokens, n, fill = Year)) + 
+it_word_counts %>%
+  top_n(20) %>%
+  mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
+  ggplot(aes(inclusive_teach_tokens, n, fill = Year)) + 
   geom_bar(stat = "identity", show.legend = FALSE) +
   facet_wrap(~Year, ncol = 2, scales = "free_x")
+```
 
-#better (w/o facet wrap), but only includes ~22% of data! (b/c we filtered for n > 5)
+Better (w/o facet wrap), but only includes ~22% of data! (b/c we filtered for n > 5)
+
+``` {r}
 it_word_counts %>%
   filter(n > 5) %>%
+  mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
   ggplot(aes(inclusive_teach_tokens, n, fill = Year)) +
   geom_col() +
   coord_flip() +
   labs(y = "(DEI Related) Word Count in Inclusive Teaching Text") +
   facet_wrap(~Year)
+```
 
-#cool! but why are some words showing up twice? (ex.. identities, engage, abilities, diverse)
+Cool! but why are some words showing up twice? (ex.. identities, engage, abilities, diverse)
+
+``` {r}
 it_word_counts %>%
   with(wordcloud(inclusive_teach_tokens, n))
+```
 
+??? Too many years! and not color blind friendly
 
-#??? too many years! and not color blind friendly
+``` {r}
 it_word_counts %>%
   acast(inclusive_teach_tokens ~ Year, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("#fbb4ae", "#b3cde3", "#ccebc5", "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd", "#fddaec", "#f2f2f2"))
 
 ```
+
+## 2-gram Analysis
+
+```{r 2-gra, word analysis}
+
+
+rios_data_token2it <- rios_data %>%
+  unnest_tokens(it_tokens_2w, `Inclusive Teaching Description`, token = "ngrams", n = 2)  %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!word1 %in% stopwords_vec) %>%
+  filter(!word2 %in% stopwords_vec) %>% 
+  unite(it_tokens_2w, word1, word2, sep = " ") 
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!str_detect(it_tokens_2w, paste(strings, collapse = "|")))
+
+
+#creating a DEI related column
+rios_data_token2it$dei_related = NA
+
+
+rios_data_token2it$dei_related <- sapply(rios_data_token2it$it_tokens_2w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+
+#removing the unnnecessary columns/rows
+rios_data_token2it <- rios_data_token2it[,-c(9:13)]
+
+unnecessary <- c("individually table", "individual investigators", "individual module", "individual noninteractive", "individual pre", "individual clicker", "inclusion another", "inclusion additionally", "identify species", "identify primer", "identify possible", "identified alternatively", "identification", "ideas individual", "group divide", "general inclusive", "bird identification", "yet inclusive", "variants identified", "teachers identify", "skills perspectives", "sheet individually", "residential birds", "radiation incidents", "regular individually", "pipeline cure", "plant communities", "popular culture", "personal connection", "physical connection", "perspective remind", "perspectives anonymous", "four individuals", "first collaborative", "find identify", "ever identified", "evenly divides", "ethnic economic", "ethnic given", "equity public", "england individual", "engaging final", "diverse face", "diverse natural", "diverse mixed", "direct connection", "disabilities benefit", "data individuals", "data individually", "less confident", "communities due", "collaborative yet", "collaborative easing", "collaboration using", "collaboration throughout", "class individual", "biodiversiy lab", "biodiversity losses", "backgrounds may", "backgrounds find", "backgrounds furthermore", "backgrounds therefore", "area identified", "answer individually", "agricultural sciences", "ability train", "ability moreover", "abilities match", "questions individually", "individuals turn", "individuals since", "communicate collaborate", "backgrounds throughout", "access see", "ada accessibility", "de identified", "efficacy identity", "individualactors may")
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!str_detect(it_tokens_2w, paste(unnecessary, collapse = "|")))
+
+#most common DEI words
+rios_2w_count <- rios_data_token2it %>%
+  filter(dei_related == "TRUE") %>%
+  count(it_tokens_2w, sort = TRUE)
+
+
+#graph of that 
+rios_2w_count %>%
+  top_n(30) %>%
+  mutate(it_tokens_2w = reorder(it_tokens_2w, n)) %>%
+  ggplot(aes(it_tokens_2w, n)) +
+  geom_col() +
+  coord_flip() +
+  labs(y = "(DEI Related) 2 Word Count in Inclusive Teaching Text") + 
+  xlab(NULL)
+
+
+#total2dei for each year
+total2deiyear <- rios_data_token2it %>%
+  filter(dei_related == "TRUE") %>%
+  group_by(Year) %>%
+  count(it_tokens_2w, sort = TRUE) %>%
+  summarise(totaldeiy = sum(n))
+
+#totaldei for each article, only 240 obs vs 251!
+total2deiarticle <- rios_data_token2it %>%
+  filter(dei_related == "TRUE") %>%
+  group_by(article_num) %>%
+  count(it_tokens_2w, sort = TRUE) %>%
+  summarise(totaldeia = sum(n)) %>%
+  arrange(desc(totaldeia))
+
+#total words in each year
+totalwordsyear <- rios_data %>%
+  group_by(Year) %>%
+  summarise(totaly = sum(`Word Count of Inclusive Teaching?`, na.rm = TRUE))
+
+#total words in each article
+totalwordsarticle <- rios_data %>%
+  select(15,9)
+  
+
+#proportions for each year, fluctuating like before
+total2deiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly)%>%
+  arrange(desc(ratio))
+
+#proportions for each article, also fluctuating
+total2deiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/`Word Count of Inclusive Teaching?`) %>%
+  arrange(desc(ratio))
+
+
+
+```
+
+## Network Plot of Word Relationship
+
+
+```{r}
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_data_token2 %>% 
+  filter(dei_related == TRUE) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  filter(n > 3) %>% 
+  graph_from_data_frame()
+
+```
+
 
 
 
