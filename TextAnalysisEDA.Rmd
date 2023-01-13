@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Setup/Data Cleaning
 
-```{r loading data}
+Here I'm installing and loading the necessary packages and doing some data cleaning. 
+
+```{r Loading packages and data}
 #install.packages("skimr")
 #install.packages("tidyverse")
 #install.packages("tidytext")
@@ -34,11 +36,11 @@ dei_keywords <- read_csv("SJEDI_words 2022-12-20 18_03_42.csv")
 rios_data$`Inclusive Teaching  included?`[12] = "No"
 rios_data <- rios_data %>%
   arrange(desc(Year))
-
 ```
 
+I've created a variable with diversity related words from the keywords column and then added to the DEI Keywords that I imported `dei_keywords`. I also added another column, which includes the article number for each row.
 
-```{r text cleaning, echo=FALSE}
+``` {r More Data Cleaning}
 #diversity related words from the 'keyword themes' column!
 diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
 
@@ -48,22 +50,15 @@ for (x in 1:13){
 }
 
 rios_data$article_num <- c(1:nrow(rios_data))
+```
 
-#example <- tibble(text = test1) #bring the data into a form that facilitates manipulation: a tibble
+Here, each word from the `Inlcusive Teaching Description` and `keyword themes` is "un-nested" into it's own row. Then any unnecessary punctuation, numbers and words are removed, for analysis.
 
-#example %>% 
- # pull(text) %>% 
-  #str_split(pattern = " ")
+``` {r More Data Cleaning 2}
 
-#words <- example %>%
- # unnest_tokens(output = words, 
-  #              input = text)
-
-#applying to df to see output 
 rios_data_tokenizedit <- rios_data %>%
   unnest_tokens(output = inclusive_teach_tokens, input = `Inclusive Teaching Description`)
 
-#glimpse(rios_data_tokenized)
 
 #removing all rows with any punctuation, digits, or "stopwords" (~20k rows total)
 strings <- c("[:punct:]", "[:digit:]","\\(","\\)")
@@ -100,8 +95,9 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
 
 ## EDA
 
+`dei_related` columns were created for each data frame, which says TRUE if that word (regarding the Inclusive Teaching Descriptions and the keyword themes) matches any word from the `dei_keywords` dataframe.
 
-```{r some more EDA}
+```{r EDA}
 
 #creating a DEI related column
 rios_data_tokenizedit$dei_relatedit = NA
