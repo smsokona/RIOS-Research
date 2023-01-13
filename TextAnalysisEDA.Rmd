@@ -97,7 +97,7 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
 
 `dei_related` columns were created for each data frame, which says TRUE if that word (regarding the Inclusive Teaching Descriptions and the keyword themes) matches any word from the `dei_keywords` dataframe.
 
-```{r EDA}
+```{r EDA prep}
 
 #creating a DEI related column
 rios_data_tokenizedit$dei_relatedit = NA
@@ -115,13 +115,31 @@ rios_data_tokenizedkt$dei_relatedkt <- sapply(rios_data_tokenizedkt$keyword_them
 rios_data_tokenizedit <- rios_data_tokenizedit[,-c(9:13)]
 rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
+```
 
-#most common DEI words
+## Basic Summary Statistics
+
+What are the most common "DEI" Words in the Inclusive Teaching Description? 
+
+According to the table below,  the words "inclusive", "diversity" and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities. However, the title of this section for which these descriptions are under is called "Inclusive teaching", so one could have a lengthy description of this, without including any of the words from `dei_keywords` and then mention "inclusive teaching" to be included in this category, thus, these numbers may be an underestimate.
+
+[BASED ON WHAT WAS SAID ABOVE, FILTER FOR ALL THE PHRASES THAT DON'T MATCH "INCLUSIVE TEACHING" AND SEE HOW THIS NUMBER CHANGES]
+
+``` {r EDA1}
+
+#most common DEI words -
 rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
-  group_by(Year, article_num, inclusive_teach_tokens) %>%
-  count(inclusive_teach_tokens, sort = TRUE)
+  count(inclusive_teach_tokens, sort = TRUE) %>%
+  filter(n > 5) 
+   %>% summarise(total = sum(n)) #- when we run this line, we get a total of 1474 "DEI" words
+```
 
+Let's look at a histogram of how these common words are distributed. Keep in mind that 5% of the data includes DEI words. Of this 5%, ...
+
+
+
+``` {r EDA2}
 #the most common dei_related words don't necessarily have the same dei related keyword themes
 rios_data_tokenizedkt %>%
   filter(dei_relatedkt == "TRUE") %>%
