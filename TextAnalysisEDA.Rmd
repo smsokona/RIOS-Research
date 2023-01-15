@@ -1,8 +1,10 @@
 ---
 title: "RIOS Research - Inclusive Teaching Text Analysis"
 author: "Sokona Mangane"
-output: html_document
 date: "2022-12-14"
+output:
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Setup/Data Cleaning
 
-Here I'm installing and loading the necessary packages and doing some data cleaning. 
+Here I'm installing and loading the necessary packages and doing some data cleaning.
 
 ```{r Loading packages and data}
 #install.packages("skimr")
@@ -40,7 +42,7 @@ rios_data <- rios_data %>%
 
 I've created a variable with diversity related words from the keywords column and then added to the DEI Keywords that I imported `dei_keywords`. I also added another column, which includes the article number for each row.
 
-``` {r More Data Cleaning}
+```{r More Data Cleaning}
 #diversity related words from the 'keyword themes' column!
 diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
 
@@ -50,11 +52,17 @@ for (x in 1:13){
 }
 
 rios_data$article_num <- c(1:nrow(rios_data))
+
+Artlnumbyr <- rios_data %>%
+  group_by(Year) %>%
+  select(4,15) %>%
+  summarise(artlsum = n()) %>%
+  arrange(desc(Year))
 ```
 
 Here, each word from the `Inlcusive Teaching Description` and `keyword themes` is "un-nested" into it's own row. Then any unnecessary punctuation, numbers and words are removed, for analysis.
 
-``` {r More Data Cleaning 2}
+```{r More Data Cleaning 2}
 
 rios_data_tokenizedit <- rios_data %>%
   unnest_tokens(output = inclusive_teach_tokens, input = `Inclusive Teaching Description`)
@@ -119,15 +127,15 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 ## Basic Summary Statistics
 
-What are the most common "DEI" Words in the Inclusive Teaching Description? 
+What are the most common "DEI" Words in the Inclusive Teaching Description?
 
-Looking at the most common DEI words gives us an idea of what DEI words are being used the most, and what does that tell us about how the authors are being inclusive. According to the table below,  the words "inclusive", "diversity" and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Out of 118 "DEI" words, note that 70% of these words are repeated more than once (83/118) and 54.2% are repeated more than twice (64/118). Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities. 
+Looking at the most common DEI words gives us an idea of what DEI words are being used the most, and what does that tell us about how the authors are being inclusive. According to the table below, the words "inclusive", "diversity" and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Out of 118 "DEI" words, note that 70% of these words are repeated more than once (83/118) and 54.2% are repeated more than twice (64/118). Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities.
 
 However, the title of this section for which these descriptions are under is called "Inclusive teaching", so one could have a lengthy description of this, without including any of the words from `dei_keywords` and then mention "inclusive teaching" to be included in this category, thus, these numbers may be an underestimate. Below (on Chunk 13 - 2 gram analysis) you can find a data frame `rios_2w_count` that portrays the most common DEI 2 words phrases.
 
 [BASED ON WHAT WAS SAID ABOVE, FILTER FOR ALL THE PHRASES THAT DON'T MATCH "INCLUSIVE TEACHING" AND SEE HOW THIS NUMBER CHANGES]
 
-``` {r EDA1}
+```{r EDA1}
 
 #most common DEI words, out of 118 (out of 4,464 words, 2.6% are DEI)
 rios_data_tokenizedit %>%
@@ -136,8 +144,7 @@ rios_data_tokenizedit %>%
  
 ```
 
-
-``` {r EDA2}
+```{r EDA2}
 #the most common dei_related words don't necessarily have the same dei related keyword themes
 #rios_data_tokenizedkt %>%
  # filter(dei_relatedkt == "TRUE") %>%
@@ -153,15 +160,9 @@ it_word_counts <- rios_data_tokenizedit %>%
 
 Which articles and years has the highest proportion of DEI related words? How does this proportion change?
 
-I've calculated the number of *DISTINCT* DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words for a more "fair" comparison, thus the proportions may  be an overestimate. 
+I've calculated the number of *DISTINCT* DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words for a more "fair" comparison, thus the proportions may be an overestimate. Based on the plot, although the number of DEI related words ius increasing each year, the proportions are decreasing, surprisingly...
 
-Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words
-
-Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time.  Based on the calculation above, only 2.6% of words in the Inclusive Teaching Text are DEI related (118/4,464). However, this doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're looking grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles 
-
-
-
-``` {r Proportion of DEI Words}
+```{r Proportion of DEI Words}
 #totaldei for each year
 totaldeiyear <- it_word_counts %>%
   summarise(totaldeiy = n()) 
@@ -169,7 +170,7 @@ totaldeiyear <- it_word_counts %>%
 #totaldei for each article, only 251 obs, so some articles don't have any dei related words (30 articles with no Inclusive Teaching Section...)
 totaldeiarticle <- rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
-  group_by(article_num) %>%
+  group_by(article_num, Year) %>%
   count(inclusive_teach_tokens) %>%
   summarise(totaldeia = n()) 
 
@@ -189,15 +190,30 @@ totalwordsarticle <-  rios_data_tokenizedit %>%
 #proportions for each year, fluctuating 
 totaldeiyear %>%
   full_join(totalwordsyear, by = c("Year")) %>%
-  mutate(ratio = totaldeiy/totaly)%>%
-  arrange(desc(ratio))
+  mutate(ratio = totaldeiy/totaly) %>%
+  ggplot(aes(Year, ratio)) +
+  geom_line() +
+  ylim(0,0.053) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
+```
 
+I decided to group by article number so I could get a better, more detailed look at the changes in the proportions. We can see that certain articles are outliers, with the highest in 2014 and average ratio being just over 0.05. Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words and that's why there are "blanks" in the graph.
+
+Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time. Based on the calculation above, only 2.6% of words in the Inclusive Teaching Text are DEI related (118/4,464). However, this doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're looking grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles.
+
+```{r Proportion of DEI Words 2}
 #proportions for each article, also fluctuating (higher article # means it happened earlier ex: article # 270 = year 2014)
 totaldeiarticle %>%
   full_join(totalwordsarticle, by = c("article_num")) %>%
   mutate(ratio = totaldeia/totala) %>%
-  arrange(desc(ratio)) %>%
-  filter(article_num %in% c(120,171,197,220,242)) 
+  arrange(article_num) %>%
+  ggplot(aes(article_num, ratio, color = Year)) +
+  geom_line() +
+  #ylim(0,0.053) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Article Number", subtitle = "(in the 'Inclusive Teaching' Section)", x = "Article Number") +
+  geom_smooth(method=lm, se=FALSE) + 
+  scale_color_gradientn(colours = rainbow(9))
+
 
 
 
@@ -205,10 +221,12 @@ rios_data_tokenizedit %>%
   filter(article_num %in% c(120,171,197,220,242)) %>%
   select(1,4,8:11)
 
+
 ```
 
 ## Visuals :)
 
+The boxplot below just visualizes the word count of the Inclusive Teaching Section over time, which we can see is similar to the total DEI related words.
 
 ```{r}
 #word count over time plot 
@@ -244,9 +262,9 @@ it_word_counts %>%
   facet_wrap(~Year, ncol = 2, scales = "free_x")
 ```
 
-Better (w/o facet wrap), but only includes ~22% of data! (b/c we filtered for n > 5)
+Better (w/o facet wrap), but only includes \~22% of data! (b/c we filtered for n \> 5)
 
-``` {r}
+```{r}
 it_word_counts %>%
   filter(n > 5) %>%
   mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
@@ -259,14 +277,14 @@ it_word_counts %>%
 
 Cool! but why are some words showing up twice? (ex.. identities, engage, abilities, diverse)
 
-``` {r}
+```{r}
 it_word_counts %>%
   with(wordcloud(inclusive_teach_tokens, n))
 ```
 
 ??? Too many years! and not color blind friendly
 
-``` {r}
+```{r}
 it_word_counts %>%
   acast(inclusive_teach_tokens ~ Year, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("#fbb4ae", "#b3cde3", "#ccebc5", "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd", "#fddaec", "#f2f2f2"))
@@ -366,7 +384,6 @@ total2deiarticle %>%
 
 ## Network Plot of Word Relationship
 
-
 ```{r}
 rios_data_token2 <- rios_data_token2it %>%
   separate(it_tokens_2w, c("word1", "word2"), sep = " ")
@@ -378,7 +395,3 @@ rios_data_token2 %>%
   graph_from_data_frame()
 
 ```
-
-
-
-
