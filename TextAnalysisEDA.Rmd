@@ -125,7 +125,7 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 ```
 
-## Basic Summary Statistics
+### Basic Summary Statistics
 
 What are the most common "DEI" Words in the Inclusive Teaching Description?
 
@@ -135,7 +135,8 @@ However, the title of this section for which these descriptions are under is cal
 
 [BASED ON WHAT WAS SAID ABOVE, FILTER FOR ALL THE PHRASES THAT DON'T MATCH "INCLUSIVE TEACHING" AND SEE HOW THIS NUMBER CHANGES]
 
-```{r EDA1}
+```{r BSS1}
+#BSS = BASIC SUMMARY STATISTICS
 
 #most common DEI words, out of 118 (out of 4,464 words, 2.6% are DEI)
 rios_data_tokenizedit %>%
@@ -144,7 +145,7 @@ rios_data_tokenizedit %>%
  
 ```
 
-```{r EDA2}
+```{r BSS2}
 #the most common dei_related words don't necessarily have the same dei related keyword themes
 #rios_data_tokenizedkt %>%
  # filter(dei_relatedkt == "TRUE") %>%
@@ -224,11 +225,13 @@ rios_data_tokenizedit %>%
 
 ```
 
-## Visuals :)
+### Visuals :)
 
-The boxplot below just visualizes the word count of the Inclusive Teaching Section over time, which we can see is similar to the total DEI related words.
+## Word Count of Inclusive Teaching Text Over Time Box Plot
 
-```{r}
+The boxplot below just visualizes the word count of the Inclusive Teaching Section over time, which we can see is similar to the trend of the total DEI related words over time.
+
+```{r V1}
 #word count over time plot 
 #rios_data %>%
  # ggplot(aes(rios_data$Year, rios_data$`Word Count of Inclusive Teaching?`)) + 
@@ -248,23 +251,134 @@ The boxplot below just visualizes the word count of the Inclusive Teaching Secti
 
 ```
 
-The x axis is very crowded!
+The tables and visuals above give us an idea of how often are DEI Words used and what does that say about inclusivity of the articles. However, looking at the most commonly used DEI words doens't give us all the information on how the article is being inclusive.
 
-```{r plot time!, warning=FALSE}
+## In Depth Bar Chart of Word Count By Year {.tabset}
 
-#it_word_counts is defined in chunk 4!
+This is a bar chart that looks more indepth into the frequency of words being used, each year. You can click on each tab to see to compare by each year.
+
+### 2014
+
+```{r V2 2014, warning=FALSE}
 
 it_word_counts %>%
+  filter(Year == 2014) %>%
   top_n(20) %>%
-  mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
-  ggplot(aes(inclusive_teach_tokens, n, fill = Year)) + 
-  geom_bar(stat = "identity", show.legend = FALSE) +
-  facet_wrap(~Year, ncol = 2, scales = "free_x")
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
 ```
+
+### 2015
+
+```{r V2 2015, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2015) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2016
+
+```{r V2 2016, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2016) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2017
+
+```{r V2 2017, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2017) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2018
+
+```{r V2 2018, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2018) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2019
+
+```{r V2 2019, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2019) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2020
+
+```{r V2 2020, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2020) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2021
+
+```{r V2 2021, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2021) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+### 2022
+
+```{r V2 2022, warning=FALSE}
+
+it_word_counts %>%
+  filter(Year == 2022) %>%
+  top_n(20) %>%
+  ggplot(aes(inclusive_teach_tokens, n)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0,33)
+```
+
+##  {-}
 
 Better (w/o facet wrap), but only includes \~22% of data! (b/c we filtered for n \> 5)
 
-```{r}
+```{r V3}
 it_word_counts %>%
   filter(n > 5) %>%
   mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
@@ -277,21 +391,21 @@ it_word_counts %>%
 
 Cool! but why are some words showing up twice? (ex.. identities, engage, abilities, diverse)
 
-```{r}
+```{r V4}
 it_word_counts %>%
   with(wordcloud(inclusive_teach_tokens, n))
 ```
 
 ??? Too many years! and not color blind friendly
 
-```{r}
+```{r V5}
 it_word_counts %>%
   acast(inclusive_teach_tokens ~ Year, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("#fbb4ae", "#b3cde3", "#ccebc5", "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd", "#fddaec", "#f2f2f2"))
 
 ```
 
-## 2-gram Analysis
+## 2-gram Word Analysis
 
 ```{r 2-gram word analysis}
 
