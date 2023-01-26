@@ -445,7 +445,9 @@ rios_data_token2it$dei_related = NA
 rios_data_token2it$dei_related <- sapply(rios_data_token2it$it_tokens_2w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
 
 
-#removing the unnnecessary columns/rows
+#removing the unnnecessary columns/rows [doesn't make sense or not related to DEI] 
+#however keep in mind, in the context of a sentence it probably make senses, so i could be removing some important words
+
 rios_data_token2it <- rios_data_token2it[,-c(9:13)]
 
 unnecessary <- c("individually table", "individual investigators", "individual module", "individual noninteractive", "individual pre", "individual clicker", "inclusion another", "inclusion additionally", "identify species", "identify primer", "identify possible", "identified alternatively", "identification", "ideas individual", "group divide", "general inclusive", "bird identification", "yet inclusive", "variants identified", "teachers identify", "skills perspectives", "sheet individually", "residential birds", "radiation incidents", "regular individually", "pipeline cure", "plant communities", "popular culture", "personal connection", "physical connection", "perspective remind", "perspectives anonymous", "four individuals", "first collaborative", "find identify", "ever identified", "evenly divides", "ethnic economic", "ethnic given", "equity public", "england individual", "engaging final", "diverse face", "diverse natural", "diverse mixed", "direct connection", "disabilities benefit", "data individuals", "data individually", "less confident", "communities due", "collaborative yet", "collaborative easing", "collaboration using", "collaboration throughout", "class individual", "biodiversiy lab", "biodiversity losses", "backgrounds may", "backgrounds find", "backgrounds furthermore", "backgrounds therefore", "area identified", "answer individually", "agricultural sciences", "ability train", "ability moreover", "abilities match", "questions individually", "individuals turn", "individuals since", "communicate collaborate", "backgrounds throughout", "access see", "ada accessibility", "de identified", "efficacy identity", "individualactors may")
@@ -542,34 +544,9 @@ total2deiarticle %>%
 The visuals above give us an idea of what words are used most frequently and how that has changed over time. We can definitely see what people view as inclusive teaching has changed but still varies. However, to reiterate the frequency of . 
 
 
-# Network Plot of Word Relationship
-
-To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words
-
-```{r}
-rios_data_token2 <- rios_data_token2it %>%
-  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
-
-rios_phrase_network <- rios_data_token2 %>% 
-  filter(dei_related == TRUE) %>%
-  count(word1, word2, sort = TRUE) %>% 
-  filter(n > 3) %>% 
-  graph_from_data_frame()
-
-
-set.seed(20181005)
-
-a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
-
-ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
-    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
-
-```
-
 # 3 gram Word Analysis
 
-I also did a 3 gram word Analysis.
-
+I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts. 
 ```{r 3gwa}
 
 ## plot the frequency
@@ -601,10 +578,142 @@ rios_data_token3it$dei_related <- sapply(rios_data_token3it$it_tokens_3w, functi
 #removing the unnnecessary columns/rows
 rios_data_token3it <- rios_data_token3it[,-c(9:13)]
 
+#removing unnecessary content that doesn't make sense, however keep in mind as three words it might not make sense or be related to inclusive teaching, but in the context of a sentence it probably make sense
+
+unnecessary2 <- c("academic background identity", "academic professional backgrounds", "individuals since questions", "inclusive teaching requires", "implements inclusive teaching", "many individuals since", "must communicate collaborate", "several inclusive teaching", "abilities experimental questions", "access discussion throughout", "access faculty access", "access sample work", "access see comments", "access several learning", "access software programs", "access species database", "accommodators perceived individual", "animal communities due", "american cultures science", "author backgrounds demonstrating", "background knowledge differently", "background therefore inexpensive", "backgrounds can benefit", "backgrounds find intellectual", "backgrounds may identify", "backgrounds needs learning", "backgrounds often find", "biodiversity database schools", "biodiversity lab report", "biodiversity losses amount", "biology species identified", "bird identification resources", "broader area identified", "butterfly activity engages", "campus based access", "class individual research", "class collaboration peer", "class individual research", "clicker questions individually", "coast students connected", "collaborative effort seeks", "completed courses backgrounds", "completing individual work", "connected device instructors", "connections may result", "contribute individual data", "cultured bacteria including", "cures increase access", "current biodiversity losses", "cyverse infrastructure connected", "de identified results", "different communities may", "disabilities additionally scientific", "discussing cellular diversity", "diverse demonstrators finally", "diversity among streptomyces", "diversity dna sequence", "diversity gap additionally", "divides labor among", "drift engaging students", "dynamics inclusive learning", "engagement student appropriate", "engages multiple senses", "engaging final presentation", "engaging multiple types", "engaging multiple week", "england individual investigators", "evenly divides labor", "friendly internet connected", "genetic drift engaging", "handle cultured samples", "handling cultured bacteria", "high impact active", "ideas individual writing", "identified asset maps", "identified instructors implementing", "identified personality types", "identify possible therapeutic", "identify primer binding", "inclusion another way", "inclusion standards can", "inclusion within many", "individual choice udl", "individual clicker questions", "individual self paced", "individual pre class", "individual submissions upon", "individual writing assignments", "ndividual writing peer", "individual written report", "individually completing separate", "individually first although", "individually group work", "individually providing time", "individually select groups", "individually selected research", "individuals students work", "instructor individual exploration", "instructor individual pre", "interesting biological cultural", "internet connected device", "investigate genetic diversity", "loxp lesson inclusive", "microorganisms impact human", "might impact human", "natural abilities match", "nuclear radiation incidents", "online bird identification", "open access species", "perspectives anonymous clicker", "plant communities useful", "plant identification http", "practice sheet individually", "prefer individual work", "project biodiversify website", "public biodiversity database", "purposes open access", "pursuing bird identification", "questions individual students", "questions individually discuss", "regular individually selected", "reliable internet connectivity", "revealing identifying information", "rgs encourage individual", "seafood traceability issues", "self efficacy identity", "self identified asset", "self identified personality", "serpentine plant communities", "sheet individually providing", "significantly less connected", "simple model collaboration",	"site easily accessible", "spatial ability train", 
+"species identified alternatively",	"species identified instructors", "strategies including individual", "traceability issues overall", "videos students engage", "ways first collaborative", "ways individual clicker", "ways individual self", "whether current biodiversity")
+#didn't include all of them here, but notice that inclusive teaching is synonmous with collaborative, working with other students (rows 123-144), being diverse, diversity (rows 198-237), and including ppl (inclusion, inclusive, including, etc.)
+
+rios_data_token3it <- rios_data_token3it %>%
+  filter(!str_detect(it_tokens_3w, paste(unnecessary2, collapse = "|")))
+
+
+#graph of the most common
 rios_data_token3it %>%
   filter(dei_related == "TRUE") %>%
-  count(it_tokens_3w, sort = TRUE) 
+  count(it_tokens_3w, sort = TRUE) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(it_tokens_3w, n)) %>%
+  ggplot(aes(it_tokens_3w, n)) +
+  geom_col() +
+  coord_flip() +
+  labs(y = "(DEI Related) 3 Word Count in Inclusive Teaching Text") + 
+  xlab(NULL)
+```
+
+Just like the DEI phrases of 2 words, we can see that the proportions are increasing every year, with the highest proportion in 2020!
+
+``` {r Proportions of DEI Phrases 3w}
+
+#total3dei for each year
+total3deiyear <- rios_data_token3it %>%
+  filter(dei_related == "TRUE") %>%
+  group_by(Year) %>%
+  count(it_tokens_3w, sort = TRUE) %>%
+  summarise(totaldeiy = sum(n))
+
+#total2dei for each article, now 189 obs vs 251 and 240!
+total3deiarticle <- rios_data_token3it %>%
+  filter(dei_related == "TRUE") %>%
+  group_by(article_num, Year) %>%
+  count(it_tokens_3w, sort = TRUE) %>%
+  summarise(totaldeia = sum(n)) %>%
+  arrange(desc(totaldeia))
+
+# #total words in each year
+# total2wordsyear <-  rios_data_token2it %>%
+#   group_by(Year) %>%
+#   count(it_tokens_2w, sort = TRUE)  %>%
+#   summarise(totaly = n())
+
+#na.rm = TRUE))
+
+#total words in each article
+# totalwordsarticle <- rios_data %>%
+#   select(15,9)
+  
+
+#proportions for each year, fluctuating like before
+total3deiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly)%>%
+  arrange(desc(ratio)) %>%
+  ggplot(aes(Year, ratio)) +
+  geom_line() +
+  ylim(0,0.143) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Phrases (3 Words) to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
+```
+
+
+
+There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing.
+
+``` {r Proportions of DEI Phrases 3w 2}
+#proportions for each article, also fluctuating
+total3deiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/totala) %>%
+  arrange(desc(ratio))  %>%
+  ggplot(aes(article_num, ratio, color = Year)) +
+  geom_line() +
+  #ylim(0,0.053) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Phrases (3 words) to Total Words By Article Number", subtitle = "(in the 'Inclusive Teaching' Section)", x = "Article Number") +
+  geom_smooth(method=lm, se=FALSE) + 
+  scale_color_gradientn(colours = rainbow(9))
+
+
 
 ```
+
+# Network Plot of Word Relationship
+
+To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words
+
+```{r}
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  filter(n > 3) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+
+
+# Normalized Word Frequency 
+
+This can help us see the "weight" of each words and the words most distinctive for each year and article
+
+```{r norm word freq}
+
+#finding the most distinctive words for each document
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf))
+
+rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(article_num, Year) %>%
+  count(inclusive_teach_tokens, sort = TRUE) %>%
+  bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
+  arrange(desc(tf_idf))
+
+```
+
+
+
+
+
 
 
