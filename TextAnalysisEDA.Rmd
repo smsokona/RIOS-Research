@@ -550,10 +550,6 @@ I also did a 3 gram word Analysis, which has a much a lower frequency. However, 
 ```{r 3gwa}
 
 ## plot the frequency
-prof.count %>% filter(n > 50) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, 
-    n)) + geom_col() + xlab(NULL) + coord_flip()
-
-
 rios_data_token3it <- rios_data %>%
   unnest_tokens(it_tokens_3w, `Inclusive Teaching Description`, token = "ngrams", n = 3)  %>%
   separate(it_tokens_3w, c("word1", "word2", "word3"), sep = " ")
