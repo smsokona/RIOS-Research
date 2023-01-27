@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 ## Setup/Data Cleaning
@@ -20,13 +20,13 @@ Here I'm installing and loading the necessary packages and doing some data clean
 #cmd + shift + c to comment out code 
 #cmd + shift + M to print %>% pipe operator
 #cmd + return to run code 
-#install.packages("skimr")
-#install.packages("tidyverse")
-#install.packages("tidytext")
-#install.packages("stopwords")
-#install.packages("wordcloud")
-#install.packages("reshape2")
-#install.packages("ggraph")
+# install.packages("skimr")
+# install.packages("tidyverse")
+# install.packages("tidytext")
+# install.packages("stopwords")
+# install.packages("wordcloud")
+# install.packages("reshape2")
+# install.packages("ggraph")
 library(ggraph)
 library(igraph)
 library(skimr)
@@ -136,8 +136,6 @@ What are the most common "DEI" Words in the Inclusive Teaching Description?
 Looking at the most common DEI words gives us an idea of what DEI words are being used the most, and what does that tell us about how the authors are being inclusive. According to the table below, the words "inclusive", "diversity" and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Out of 118 "DEI" distinct words used in the inclusive teaching text, note that 70% of these words are repeated more than once (83/118) and 54.2% are repeated more than twice (64/118). Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities. Chunk 21 (Word Cloud) visualizes this clearly. 
 
 However, the title of this section for which these descriptions are under is called "Inclusive teaching", so one could have a lengthy description under this section, without including any of the words from `dei_keywords` and then mention "inclusive teaching" to be included in this category, thus, these numbers may be an underestimate. Below (on Chunk 13 - 2 gram analysis) you can find a data frame `rios_2w_count` that portrays the most common DEI 2 words phrases.
-
-[BASED ON WHAT WAS SAID ABOVE, FILTER FOR ALL THE PHRASES THAT DON'T MATCH "INCLUSIVE TEACHING" AND SEE HOW THIS NUMBER CHANGES]
 
 ```{r BSS1}
 #BSS = BASIC SUMMARY STATISTICS
@@ -642,7 +640,7 @@ total3deiyear %>%
 
 
 
-There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing.
+There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing. However notice the outliers in 2018/2019 are consistent with our findings from the bar chart of the most common words each year (which sparked in 2019)
 
 ``` {r Proportions of DEI Phrases 3w 2}
 #proportions for each article, also fluctuating
@@ -689,27 +687,183 @@ ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width
 
 # Normalized Word Frequency 
 
-This can help us see the "weight" of each words and the words most distinctive for each year and article
+This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term’s tf-idf [the term frequency and idf  multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"][source1]
+
+## The Most Distinctive Words By Year {.tabset}
+
+For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the rest of the years. 
+
+### 2014
 
 ```{r norm word freq}
+
 
 #finding the most distinctive words for each document
 it_word_counts %>%
   bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf))
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2014) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") 
 
-rios_data_tokenizedit %>%
-  filter(dei_relatedit == "TRUE") %>%
-  group_by(article_num, Year) %>%
-  count(inclusive_teach_tokens, sort = TRUE) %>%
-  bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
-  arrange(desc(tf_idf))
+
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  top_n(15) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") +
+  facet_wrap(~Year)
+
+#by article num
+# rios_data_tokenizedit %>%
+#   filter(dei_relatedit == "TRUE") %>%
+#   group_by(article_num, Year) %>%
+#   count(inclusive_teach_tokens, sort = TRUE) %>%
+#   bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
+#   arrange(desc(tf_idf))
+
+```
+### 2015
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2015) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2015", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
 
 ```
 
+### 2016
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2016) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2016", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+```
+
+### 2017
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2017) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2017", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+### 2018
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2018) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2018", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+### 2019
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2019) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2019", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+### 2020
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2020) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2020", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+### 2021
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2021) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2021", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+### 2022
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2022) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2022", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
+
+```
+
+## {-}
 
 
+Maybe track the use of certain words over time ? 
 
 
+[source1]: https://www.tidytextmining.com/tfidf.html
 
 
