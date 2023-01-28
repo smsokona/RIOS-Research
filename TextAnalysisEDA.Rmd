@@ -539,12 +539,13 @@ total2deiarticle %>%
 
 ```
 
-The visuals above give us an idea of what words are used most frequently and how that has changed over time. We can definitely see what people view as inclusive teaching has changed but still varies. However, to reiterate the frequency of . 
+The visuals above give us an idea of what words are used most frequently and how that has changed over time. We can definitely see what people view as inclusive teaching has changed but still varies. 
 
 
 # 3 gram Word Analysis
 
 I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts. 
+
 ```{r 3gwa}
 
 ## plot the frequency
@@ -640,7 +641,7 @@ total3deiyear %>%
 
 
 
-There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing. However notice the outliers in 2018/2019 are consistent with our findings from the bar chart of the most common words each year (which sparked in 2019)
+There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing. However notice the outliers in 2018/2019 are consistent with our findings from the bar chart of the most common words each year (which sparked in 2019).
 
 ``` {r Proportions of DEI Phrases 3w 2}
 #proportions for each article, also fluctuating
@@ -661,7 +662,7 @@ total3deiarticle %>%
 
 # Network Plot of Word Relationship
 
-To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words
+To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words.
 
 ```{r}
 rios_data_token2 <- rios_data_token2it %>%
@@ -687,11 +688,13 @@ ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width
 
 # Normalized Word Frequency 
 
-This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term’s tf-idf [the term frequency and idf  multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"][source1]
+This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term’s tf-idf [the term frequency and idf  multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"][source1]. 
+
+
+For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the other DEI related words for the rest of the years. These results make sense and align with the visuals above. Because the use of these words are very low in 2014 (besides diversity and diverse which was seen more than 5 times in 2014), they have a high tf-idf statistic. These words have been used more each year. 
+
 
 ## The Most Distinctive Words By Year {.tabset}
-
-For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the rest of the years. 
 
 ### 2014
 
@@ -709,28 +712,9 @@ it_word_counts %>%
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") 
-
-
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  top_n(15) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") +
-  facet_wrap(~Year)
-
-#by article num
-# rios_data_tokenizedit %>%
-#   filter(dei_relatedit == "TRUE") %>%
-#   group_by(article_num, Year) %>%
-#   count(inclusive_teach_tokens, sort = TRUE) %>%
-#   bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
-#   arrange(desc(tf_idf))
-
 ```
+
+
 ### 2015
 
 ```{r}
@@ -859,6 +843,31 @@ labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text
 ```
 
 ## {-}
+
+The graph below is the same as the ones above, with all of the Years on one grpah for compariosn, however, some of the weights are higher for Years 2016, 2017, and 2018, however that's not present above...
+
+``` {r}
+
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf-idf)) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  top_n(15) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") +
+  facet_wrap(~Year)
+
+#by article num
+# rios_data_tokenizedit %>%
+#   filter(dei_relatedit == "TRUE") %>%
+#   group_by(article_num, Year) %>%
+#   count(inclusive_teach_tokens, sort = TRUE) %>%
+#   bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
+#   arrange(desc(tf_idf))
+
+```
 
 
 Maybe track the use of certain words over time ? 
