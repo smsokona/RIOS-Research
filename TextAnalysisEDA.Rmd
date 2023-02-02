@@ -7,13 +7,19 @@ output:
     code_folding: hide
 ---
 
+# Introduction
+
+My name is Sokona Mangane and I'm from Brooklyn, NY. I'm a senior at Bates College, majoring in Mathematics, and minoring in Digital and Computational Studies. In conjunction with the Institute for a Racially Just, Inclusive, and Open STEM Education (RIOS), I am conducting a computational text analysis of STEM Open Education Resources (OER). In particular, I'm analyzing the "Inclusive Teaching" Section descriptions on the website CourseSource, which is a open-access and peer-reviewed journal that publishes lessons, teaching content and resources related to biology and physics; in the words of Dr. Carrie Diaz Eaton (an Associate Professor of Digital and Computational Studies at Bates College and a co-founder of QUBES, known for her work in social justice in STEM higher education), it's like a GitHub, but for curriculum.
+
+When publishing an article on CourseSource (can be categorized as a "Lesson", "Science Behind the Lesson", "Teaching Tools and Strategies", "Essay" or "Review"), authors can write about how the article is inclusive, under the "Inclusive Teaching", however there are currently no guidelines. Thus, this text analysis of OER submissions serves to answer what do people write about Inclusive Teaching.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 ## Setup/Data Cleaning
 
-Here I'm installing and loading the necessary packages and doing some data cleaning.
+Here, I've imported the excel data set and necessary packages for analysis. I also did some data cleaning, created a vector of DEI related words and added some variables to the original excel data set.
 
 ```{r Loading packages and data}
 
@@ -44,10 +50,9 @@ rios_data <- rios_data %>%
   arrange(desc(Year))
 ```
 
-I've created a variable with diversity related words from the keywords column and then added to the DEI Keywords that I imported `dei_keywords`. I also added another column, which includes the article number for each row.
-
 ```{r More Data Cleaning}
-#diversity related words from the 'keyword themes' column!
+# I've created a variable which contains diversity related words (words pulled from the keywords column) and then combined it with the `dei_keywords` dataframe I imported (Thank you Dr. Diaz-Eaton). I also added another column, which includes the article number for each row.
+
 diversity_related <- c("diversity", "bias", "confirmation bias", "cognitive bias", "social justice", "broader impacts", "racism", "identity", "equity", "inclusivity", "environmental justice", "inclusion", "belonging")
 
 #adding the vector above to the CSV dei_keywords
@@ -57,14 +62,9 @@ for (x in 1:13){
 
 rios_data$article_num <- c(1:nrow(rios_data))
 
-Artlnumbyr <- rios_data %>%
-  group_by(Year) %>%
-  select(4,15) %>%
-  summarise(artlsum = n()) %>%
-  arrange(desc(Year))
 ```
 
-Here, each word from the `Inlcusive Teaching Description` and `keyword themes` is "un-nested" into it's own row. Then any unnecessary punctuation, numbers and words are removed, for analysis.
+Here, each word from the `Inlcusive Teaching Description` and `keyword themes` is "un-nested" into it's own row and any unnecessary punctuation, numbers and words are removed. I saved each of these in their own new dataframes for analysis.
 
 ```{r More Data Cleaning 2}
 
@@ -105,8 +105,6 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt %>%
 
 ```
 
-## Exploratory Data Analysis
-
 `dei_related` columns were created for each data frame, which says TRUE if that word (regarding the Inclusive Teaching Descriptions and the keyword themes) matches any word from the `dei_keywords` dataframe.
 
 ```{r EDA prep}
@@ -129,13 +127,29 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 ```
 
-# Basic Summary Statistics
+# Exploratory Data Analysis
 
-What are the most common "DEI" Words in the Inclusive Teaching Description?
+## Word Count of Inclusive Teaching Text Over Time Box Plot
 
-Looking at the most common DEI words gives us an idea of what DEI words are being used the most, and what does that tell us about how the authors are being inclusive. According to the table below, the words "inclusive", "diversity" and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Out of 118 "DEI" distinct words used in the inclusive teaching text, note that 70% of these words are repeated more than once (83/118) and 54.2% are repeated more than twice (64/118). Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities. Chunk 21 (Word Cloud) visualizes this clearly. 
+The boxplot below visualizes the word count of the Inclusive Teaching Section over time. The Word count increases in 2019 compared to the years prior, and we also start to see more outliers. Overall, since the creation of Course Source, the word count of the Inclusive Teaching Section has increased. 
 
-However, the title of this section for which these descriptions are under is called "Inclusive teaching", so one could have a lengthy description under this section, without including any of the words from `dei_keywords` and then mention "inclusive teaching" to be included in this category, thus, these numbers may be an underestimate. Below (on Chunk 13 - 2 gram analysis) you can find a data frame `rios_2w_count` that portrays the most common DEI 2 words phrases.
+```{r V1}
+
+  boxplot(`Word Count of Inclusive Teaching?`~Year,
+          data=rios_data,
+          main="Word Count of Inlcusive Teaching Sections Over Time",
+          xlab="Year",
+          ylab="Word count of Inclusive Teaching Section",
+          horizontal = TRUE)
+
+
+```
+
+## What are the most common "DEI" Words in the Inclusive Teaching Description?
+
+Only 2.6% of words in the Inclusive Teaching Text are DEI related (118/4,464). Looking at the most common DEI words gives us an idea of what DEI words are being used the most, and what does that tell us about how the authors are being inclusive. According to the table below, the words "inclusive", "diversity", and "diverse" are the most commons "DEI" words. This makes sense as inclusive teaching should be diverse and cater to a diversity of racial backgrounds. Out of 118 "DEI" words used in the inclusive teaching text, note that 70% of these words are repeated more than once (83/118) and 54.2% are repeated more than twice (64/118). Based on these common words, it seems like these articles try to be inclusive by being diverse, engaging, and catering to a diverse set of backgrounds and abilities. 
+
+However, the title of this section for which these descriptions are under is called "Inclusive teaching", so one could have a lengthy description under this section, without including any of the words from `dei_keywords` and then mention "inclusive teaching" to be included in this category, thus, these numbers may be an underestimate. Below (2 gram analysis) you can find a data frame `rios_2w_count` that portrays the most common DEI 2 words phrases.
 
 ```{r BSS1}
 #BSS = BASIC SUMMARY STATISTICS
@@ -144,15 +158,6 @@ However, the title of this section for which these descriptions are under is cal
 rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
   count(inclusive_teach_tokens, sort = TRUE)  
- 
-```
-
-```{r BSS2}
-#the most common dei_related words don't necessarily have the same dei related keyword themes
-#rios_data_tokenizedkt %>%
- # filter(dei_relatedkt == "TRUE") %>%
-  # group_by(keyword_themes_tokens) %>%
-  # count(keyword_themes_tokens, sort = TRUE)
 
 #saving for visuals on word counts, etc
 it_word_counts <- rios_data_tokenizedit %>%
@@ -161,9 +166,23 @@ it_word_counts <- rios_data_tokenizedit %>%
   count(inclusive_teach_tokens, sort = TRUE)
 ```
 
-Which articles and years has the highest proportion of DEI related words? How does this proportion change?
+## Word Cloud
 
-I've calculated the number of *DISTINCT* DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words for a more "fair" comparison, thus the proportions may be an overestimate. Based on the plot, although the number of DEI related words is increasing each year, the proportions are decreasing, surprisingly...
+Word clouds are another way of visualizing which words are being used the most. This word cloud shows the distinct words printed in the table above.
+
+```{r V4, warning = FALSE}
+
+rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  count(inclusive_teach_tokens, sort = TRUE) %>% 
+  with(wordcloud(inclusive_teach_tokens, n))
+```
+
+## Which articles and years has the highest proportion of DEI related words? How does this proportion change?
+
+Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time. However, keep in mind that a lower proportion of DEI words doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles.
+
+I've calculated the number of DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words, thus the proportions may be an overestimate. Although the number of DEI related words is increasing each year, based on the graph below the proportions are decreasing.
 
 ```{r Proportion of DEI Words}
 #totaldei for each year
@@ -200,9 +219,18 @@ totaldeiyear %>%
   labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
 ```
 
-I decided to group by article number so I could get a better, more detailed look at the changes in the proportions. We can see that certain articles are outliers, with the highest in 2014 and average ratio being just over 0.05. Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words and that's why there are "blanks" in the graph.
+The low proportions in the years 2019-2022 could also be because there were simply way more words those years, as the table below presents:
 
-Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time. Based on the calculation above, only 2.6% of words in the Inclusive Teaching Text are DEI related (118/4,464). However, this doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're looking grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles.
+```{r}
+
+totaldeiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly)
+
+```
+
+
+I decided to group by article number as well for a better, more detailed look at the changes in the proportions. Because we're looking at the proportions by article the proportions are higher on this graph. Regardless, we can see a trend of the proportions decreasing here as well, with 2014 having the highest proportions. However, articles 34 (in Year 2022), 78 (in Year 2021), and 160 (in Year 2019) have some of the highest proportions as well. Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words and that's why there are "blanks" in the graph.
 
 ```{r Proportion of DEI Words 2}
 
@@ -218,9 +246,6 @@ totaldeiarticle %>%
   geom_smooth(method=lm, se=FALSE) + 
   scale_color_gradientn(colours = rainbow(9))
 
-
-
-
 # rios_data_tokenizedit %>%
 #   filter(article_num %in% c(120,171,197,220,242)) %>%
 #   select(1,4,8:11)
@@ -228,35 +253,9 @@ totaldeiarticle %>%
 
 ```
 
-# Visuals :)
-
-## Word Count of Inclusive Teaching Text Over Time Box Plot
-
-The boxplot below just visualizes the word count of the Inclusive Teaching Section over time, which we can see is similar to the trend of the total DEI related words over time.
-
-```{r V1}
-#word count over time plot 
-#rios_data %>%
- # ggplot(aes(rios_data$Year, rios_data$`Word Count of Inclusive Teaching?`)) + 
-  #  geom_boxplot(na.rm = TRUE) +
-   # labs(x = "Year", y = "Word count of Inclusive Teaching Section",
-  #title = "Word Count of Inlcusive Teaching Sections Over Time")
-
-
-  boxplot(`Word Count of Inclusive Teaching?`~Year,
-          data=rios_data,
-          main="Word Count of Inlcusive Teaching Sections Over Time",
-          xlab="Year",
-          ylab="Word count of Inclusive Teaching Section",
-          horizontal = TRUE)
-
-
-
-```
-
 ## In Depth Bar Chart of Word Count By Year {.tabset}
 
-This is a bar chart that looks more in depth into the frequency of words being used, each year. You can click on each tab to see to compare by each year. Keep in mind, more words are shown from 2014-2019 compared to the years after it. Regardless, when we compare each chart we can see that the number and diversity of words increases (there are decreases in 2018, and 2021) each year. From the top 20 for each year, the words "diverse", "diversity", "engage", "individual", and "inclusive" are being used the most. 
+This is a bar chart that looks more in depth into the frequency of words being used, each year. You can click on each tab to see to compare. Although 2014-2016 have higher proportions of DEI words, from 2018-2022, the top 20 DEI related words are used more frequently, specifically the words "diverse", "diversity", "engage", "individual", and "inclusive" are being used more. We can see that the number and diversity of words increases (there are decreases in 2018, and 2021) each year. 
 
 ### 2014
 
@@ -264,7 +263,7 @@ This is a bar chart that looks more in depth into the frequency of words being u
 
 it_word_counts %>%
   filter(Year == 2014) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -277,7 +276,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2015) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -290,7 +289,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2016) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -303,7 +302,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2017) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -316,7 +315,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2018) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -329,7 +328,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2019) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -342,7 +341,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2020) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -355,7 +354,7 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2021) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
@@ -368,18 +367,16 @@ it_word_counts %>%
 
 it_word_counts %>%
   filter(Year == 2022) %>%
-  top_n(20) %>%
+  head(20) %>%
   ggplot(aes(inclusive_teach_tokens, n)) + 
   geom_bar(stat = "identity", show.legend = FALSE) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   ylim(0,33)
 ```
 
-##  {-}
+##  {.unnumbered}
 
-
-
-```{r V3}
+```{r V3, include=FALSE}
 #Better (w/o facet wrap), but only includes \~22% of data! (b/c we filtered for n \> 5)
 
 #it_word_counts %>%
@@ -392,33 +389,9 @@ it_word_counts %>%
   #facet_wrap(~Year)
 ```
 
-## WordClouds
+## 2-gram Word Analysis
 
-Word clouds are another way of visualizing which words are being used the most. This word cloud shows distinct words to create the word cloud to avoid any repetitions. The wordcloud visualizes what we saw in chunk 6. 
-
-```{r V4, warning = FALSE}
-
-rios_data_tokenizedit %>%
-  filter(dei_relatedit == "TRUE") %>%
-  count(inclusive_teach_tokens, sort = TRUE) %>% 
-  with(wordcloud(inclusive_teach_tokens, n))
-```
-
-```{r V5}
-
-#??? Too many years! and not color blind friendly
-
-# it_word_counts %>%
-#   acast(inclusive_teach_tokens ~ Year, value.var = "n", fill = 0) %>%
-#   comparison.cloud(colors = c("#fbb4ae", "#b3cde3", "#ccebc5", "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd", "#fddaec", "#f2f2f2"))
-
-```
-
-# 2-gram Word Analysis
-
-The tables and visuals above give us an idea of how often are DEI Words used and what does that say about inclusivity of the articles. However, looking at the most commonly used DEI words doesn't give us all the information on how the article is being inclusive and their definitions of it. Thus, I'll repeat the analyses I did above, but looking at phrases, specifically of 2 words. Unlike above, I looked through all the phrases and removes what I felt was unnecessary and/or didn't make sense.
-
-
+The tables and visuals above give us an idea of how often are DEI Words used and what does that say about inclusivity of the articles. However, looking at the most commonly used DEI words doesn't give us all the information on how the article is being inclusive and their definitions of it. Thus, I'll repeat the analyses I did above, but looking at phrases, specifically of 2 words. Unlike above, I looked through all the phrases and removes what I felt was unnecessary and/or didn't make sense. Below we have printed the most common DEI phrases. Although some of the phrases aren't repeated often, they show that the definition of inclusive teaching goes beyond just engaging all students.
 
 ```{r 2-gram word analysis prep}
 
@@ -453,11 +426,6 @@ unnecessary <- c("individually table", "individual investigators", "individual m
 rios_data_token2it <- rios_data_token2it %>%
   filter(!str_detect(it_tokens_2w, paste(unnecessary, collapse = "|")))
 
-```
-
-Here we have printed the most common DEI phrases, similar to what we did in Chunk 6 and a visualization of those phrases. Although some of the phrases aren't repeated often, they are definition of inclusive teaching goes beyond just engaging all students.
-
-``` {r 2gwa bss 1}
 #most common DEI words
 rios_2w_count <- rios_data_token2it %>%
   filter(dei_related == "TRUE") %>%
@@ -475,10 +443,9 @@ rios_2w_count %>%
   xlab(NULL)
 ```
 
-When we look at the propotion of DEI phrases they're increasing, unlike our plot in Chunk 8...
+When we look at the proportion of DEI *phrases* by year, they're increasing unlike the trends we saw above. 
 
-
-``` {r Proportions of DEI Phrases}
+```{r Proportions of DEI Phrases}
 
 #total2dei for each year
 total2deiyear <- rios_data_token2it %>%
@@ -519,10 +486,9 @@ total2deiyear %>%
   labs(y = "Ratio", title = "The Ratio of DEI Related Phrases to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
 ```
 
-Similarly, despite the outlier ratio in 2019, we see a slight downward trend here as well, meaning that the ratio of DEI related phrases decrease as the year decreases (and the article number increases).
+Although we see a slight downward trend here (based on the straight line), some of the highest proportions by article are in from 2018-2022.
 
-
-``` {r Proportions of DEI Phrases 2}
+```{r Proportions of DEI Phrases 2}
 #proportions for each article, also fluctuating
 total2deiarticle %>%
   full_join(totalwordsarticle, by = c("article_num")) %>%
@@ -539,12 +505,10 @@ total2deiarticle %>%
 
 ```
 
-The visuals above give us an idea of what words are used most frequently and how that has changed over time. We can definitely see what people view as inclusive teaching has changed but still varies. 
 
+## 3 gram Word Analysis
 
-# 3 gram Word Analysis
-
-I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts. 
+I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts.
 
 ```{r 3gwa}
 
@@ -598,7 +562,7 @@ rios_data_token3it %>%
 
 Just like the DEI phrases of 2 words, we can see that the proportions are increasing every year, with the highest proportion in 2020!
 
-``` {r Proportions of DEI Phrases 3w}
+```{r Proportions of DEI Phrases 3w}
 
 #total3dei for each year
 total3deiyear <- rios_data_token3it %>%
@@ -639,11 +603,9 @@ total3deiyear %>%
   labs(y = "Ratio", title = "The Ratio of DEI Related Phrases (3 Words) to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
 ```
 
-
-
 There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing. However notice the outliers in 2018/2019 are consistent with our findings from the bar chart of the most common words each year (which sparked in 2019).
 
-``` {r Proportions of DEI Phrases 3w 2}
+```{r Proportions of DEI Phrases 3w 2}
 #proportions for each article, also fluctuating
 total3deiarticle %>%
   full_join(totalwordsarticle, by = c("article_num")) %>%
@@ -660,11 +622,12 @@ total3deiarticle %>%
 
 ```
 
-# Network Plot of Word Relationship
+## Network Plot of Word Relationship
 
 To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words.
 
 ```{r}
+
 rios_data_token2 <- rios_data_token2it %>%
   separate(it_tokens_2w, c("word1", "word2"), sep = " ")
 
@@ -684,17 +647,11 @@ ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width
 
 ```
 
+## Normalized Word Frequency: The Most Distinctive Words By Year {.tabset}
 
+This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term's tf-idf [the term frequency and idf multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"](https://www.tidytextmining.com/tfidf.html).
 
-# Normalized Word Frequency 
-
-This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term’s tf-idf [the term frequency and idf  multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"][source1]. 
-
-
-For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the other DEI related words for the rest of the years. These results make sense and align with the visuals above. Because the use of these words are very low in 2014 (besides diversity and diverse which was seen more than 5 times in 2014), they have a high tf-idf statistic. These words have been used more each year. 
-
-
-## The Most Distinctive Words By Year {.tabset}
+For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the other DEI related words for the rest of the years. These results make sense and align with the visuals above. Because the use of these words are very low in 2014 (besides diversity and diverse which was seen more than 5 times in 2014), they have a high tf-idf statistic. These words have been used more each year.
 
 ### 2014
 
@@ -713,7 +670,6 @@ it_word_counts %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") 
 ```
-
 
 ### 2015
 
@@ -842,11 +798,11 @@ labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text
 
 ```
 
-## {-}
+##  {-}
 
-The graph below is the same as the ones above, with all of the Years on one grpah for compariosn, however, some of the weights are higher for Years 2016, 2017, and 2018, however that's not present above...
+The graph below is the same as the ones above, with all of the Years on one graph for comparison, however, some of the weights are higher for Years 2016, 2017, and 2018, however that's not present above...
 
-``` {r}
+```{r}
 
 it_word_counts %>%
   bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
@@ -869,10 +825,38 @@ it_word_counts %>%
 
 ```
 
+Maybe track the use of certain words over time ?
 
-Maybe track the use of certain words over time ? 
+Analysis of the two articles of their other sections...?
+
+## Correlation between Keyword Themes and Inclusive Teahing Text!?
+
+I created a data frame of just articles with a keyword that's DEI related. Given that a keyword is DEI related, 4% of inclusive teaching words is also DEI related (67 out of 1,612 words). Higher correlation compared to 2.6%.
+
+```{r}
+unnecessarykt <- c("probability", "reliability", "heritability", "employability", "aquaculture", "extracellular") #should I add biodiversity here?
+
+#
+df <- rios_data_tokenizedkt %>%
+  filter(dei_relatedkt == "TRUE") %>%
+  filter(!str_detect(keyword_themes_tokens, paste(unnecessarykt, collapse = "|"))) %>%
+  left_join(rios_data_tokenizedit, by = "article_num") %>%
+  select(1:11, 17,20,21) 
 
 
-[source1]: https://www.tidytextmining.com/tfidf.html
+#most common DEI words, out of 67 (out of 1,612 words, 4% are DEI)
+df %>%
+  filter(dei_relatedit == "TRUE") %>%
+  count(inclusive_teach_tokens, sort = TRUE)  
+
+```
 
 
+
+analysis of whehter keywords themes is correlated with more DEI related words in the inclusive teaching text.
+
+# Discussion
+
+# Limitations and Furture Directions
+
+# References
