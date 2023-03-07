@@ -60,7 +60,7 @@ for (x in 1:13){
   dei_keywords[nrow(dei_keywords) + 1,] = diversity_related[x]
 }
 
-rios_data$article_num <- c(1:nrow(rios_data))
+rios_data$article_num <- c(nrow(rios_data):1)
 
 ```
 
@@ -127,7 +127,7 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 ```
 
-# Exploratory Data Analysis
+# Exploratory Data Analysis: Word Count
 
 ## Word Count of Inclusive Teaching Text Over Time Box Plot
 
@@ -137,13 +137,15 @@ The boxplot below visualizes the word count of the Inclusive Teaching Section ov
 
   boxplot(`Word Count of Inclusive Teaching?`~Year,
           data=rios_data,
-          main="Word Count of Inlcusive Teaching Sections Over Time",
-          xlab="Year",
-          ylab="Word count of Inclusive Teaching Section",
+          main="Word Count of Inclusive Teaching Sections Over Time",
+          ylab="Year",
+          xlab="Word count of Inclusive Teaching Section",
           horizontal = TRUE)
 
 
 ```
+
+# Exploratory Data Analysis: Word Frequency
 
 ## What are the most common "DEI" Words in the Inclusive Teaching Description?
 
@@ -159,11 +161,6 @@ rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
   count(inclusive_teach_tokens, sort = TRUE)  
 
-#saving for visuals on word counts, etc
-it_word_counts <- rios_data_tokenizedit %>%
-  filter(dei_relatedit == "TRUE") %>%
-  group_by(Year) %>%
-  count(inclusive_teach_tokens, sort = TRUE)
 ```
 
 ## Word Cloud
@@ -176,82 +173,122 @@ rios_data_tokenizedit %>%
   filter(dei_relatedit == "TRUE") %>%
   count(inclusive_teach_tokens, sort = TRUE) %>% 
   with(wordcloud(inclusive_teach_tokens, n))
-```
-
-## Which articles and years has the highest proportion of DEI related words? How does this proportion change?
-
-Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time. However, keep in mind that a lower proportion of DEI words doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles.
-
-I've calculated the number of DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words, thus the proportions may be an overestimate. Although the number of DEI related words is increasing each year, based on the graph below the proportions are decreasing.
-
-```{r Proportion of DEI Words}
-#totaldei for each year
-totaldeiyear <- it_word_counts %>%
-  summarise(totaldeiy = n()) 
-
-#totaldei for each article, only 251 obs, so some articles don't have any dei related words (30 articles with no Inclusive Teaching Section...)
-totaldeiarticle <- rios_data_tokenizedit %>%
-  filter(dei_relatedit == "TRUE") %>%
-  group_by(article_num, Year) %>%
-  count(inclusive_teach_tokens) %>%
-  summarise(totaldeia = n()) 
-
-#total words in each year
-totalwordsyear <- rios_data_tokenizedit %>%
-  group_by(Year) %>%
-  count(inclusive_teach_tokens, sort = TRUE)  %>%
-  summarise(totaly = n())
-
-#total words in each article, 
-totalwordsarticle <-  rios_data_tokenizedit %>%
-  group_by(article_num) %>%
-  count(inclusive_teach_tokens, sort = TRUE)  %>%
-  summarise(totala = n())
-  
-
-#proportions for each year, fluctuating 
-totaldeiyear %>%
-  full_join(totalwordsyear, by = c("Year")) %>%
-  mutate(ratio = totaldeiy/totaly) %>%
-  ggplot(aes(Year, ratio)) +
-  geom_line() +
-  ylim(0,0.053) +
-  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
-```
-
-The low proportions in the years 2019-2022 could also be because there were simply way more words those years, as the table below presents:
-
-```{r}
-
-totaldeiyear %>%
-  full_join(totalwordsyear, by = c("Year")) %>%
-  mutate(ratio = totaldeiy/totaly)
 
 ```
 
 
-I decided to group by article number as well for a better, more detailed look at the changes in the proportions. Because we're looking at the proportions by article the proportions are higher on this graph. Regardless, we can see a trend of the proportions decreasing here as well, with 2014 having the highest proportions. However, articles 34 (in Year 2022), 78 (in Year 2021), and 160 (in Year 2019) have some of the highest proportions as well. Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words and that's why there are "blanks" in the graph.
+The tables and visuals above give us an idea of how often are DEI Words used and what does that say about inclusivity of the articles. However, looking at the most commonly used DEI words doesn't give us all the information on how the article is being inclusive and their definitions of it. Thus, I'll repeat the analyses I did above, but looking at phrases, specifically of 2 words. Unlike above, I looked through all the phrases and removes what I felt was unnecessary and/or didn't make sense. Below we have printed the most common DEI phrases. Although some of the phrases aren't repeated often, they show that the definition of inclusive teaching goes beyond just engaging all students.
 
-```{r Proportion of DEI Words 2}
+## Common DEI Phrases
 
-#proportions for each article, also fluctuating (higher article # means it happened earlier ex: article # 270 = year 2014)
-totaldeiarticle %>%
-  full_join(totalwordsarticle, by = c("article_num")) %>%
-  mutate(ratio = totaldeia/totala) %>%
-  arrange(article_num) %>%
-  ggplot(aes(article_num, ratio, color = Year)) +
-  geom_line() +
-  #ylim(0,0.053) +
-  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Article Number", subtitle = "(in the 'Inclusive Teaching' Section)", x = "Article Number") +
-  geom_smooth(method=lm, se=FALSE) + 
-  scale_color_gradientn(colours = rainbow(9))
+### 2 words
 
-# rios_data_tokenizedit %>%
-#   filter(article_num %in% c(120,171,197,220,242)) %>%
-#   select(1,4,8:11)
+```{r 2-gram word analysis prep}
 
 
+rios_data_token2it <- rios_data %>%
+  unnest_tokens(it_tokens_2w, `Inclusive Teaching Description`, token = "ngrams", n = 2)  %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!word1 %in% stopwords_vec) %>%
+  filter(!word2 %in% stopwords_vec) %>% 
+  unite(it_tokens_2w, word1, word2, sep = " ") 
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!str_detect(it_tokens_2w, paste(strings, collapse = "|")))
+
+
+#creating a DEI related column
+rios_data_token2it$dei_related = NA
+
+
+rios_data_token2it$dei_related <- sapply(rios_data_token2it$it_tokens_2w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+
+#removing the unnnecessary columns/rows [doesn't make sense or not related to DEI] 
+#however keep in mind, in the context of a sentence it probably make senses, so i could be removing some important words
+
+rios_data_token2it <- rios_data_token2it[,-c(9:13)]
+
+unnecessary <- c("individually table", "individual investigators", "individual module", "individual noninteractive", "individual pre", "individual clicker", "inclusion another", "inclusion additionally", "identify species", "identify primer", "identify possible", "identified alternatively", "identification", "ideas individual", "group divide", "general inclusive", "bird identification", "yet inclusive", "variants identified", "teachers identify", "skills perspectives", "sheet individually", "residential birds", "radiation incidents", "regular individually", "pipeline cure", "plant communities", "popular culture", "perspective remind", "perspectives anonymous", "four individuals", "first collaborative", "find identify", "ever identified", "evenly divides", "ethnic economic", "ethnic given", "equity public", "england individual", "engaging final", "diverse face", "diverse natural", "diverse mixed", "direct connection", "disabilities benefit", "data individuals", "data individually", "communities due", "collaborative yet", "collaborative easing", "collaboration using", "collaboration throughout", "class individual", "biodiversiy lab", "biodiversity losses", "backgrounds may", "backgrounds find", "backgrounds furthermore", "backgrounds therefore", "area identified", "answer individually", "agricultural sciences", "ability train", "ability moreover", "abilities match", "questions individually", "individuals turn", "individuals since", "communicate collaborate", "backgrounds throughout", "access see", "de identified", "efficacy identity", "individualactors may")
+
+rios_data_token2it <- rios_data_token2it %>%
+  filter(!str_detect(it_tokens_2w, paste(unnecessary, collapse = "|")))
+
+#most common DEI words
+rios_2w_count <- rios_data_token2it %>%
+  filter(dei_related == "TRUE") %>%
+  count(it_tokens_2w, sort = TRUE) 
+
+
+#graph of that 
+rios_2w_count %>%
+  top_n(30) %>%
+  mutate(it_tokens_2w = reorder(it_tokens_2w, n)) %>%
+  ggplot(aes(it_tokens_2w, n)) +
+  geom_col() +
+  coord_flip() +
+  labs(y = "(DEI Related) 2 Word Count in Inclusive Teaching Text") + 
+  xlab(NULL)
 ```
+
+
+### 3 words
+
+I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts.
+
+```{r 3gwa}
+
+## plot the frequency
+rios_data_token3it <- rios_data %>%
+  unnest_tokens(it_tokens_3w, `Inclusive Teaching Description`, token = "ngrams", n = 3)  %>%
+  separate(it_tokens_3w, c("word1", "word2", "word3"), sep = " ")
+
+rios_data_token3it <- rios_data_token3it %>%
+  filter(!word1 %in% stopwords_vec) %>%
+  filter(!word2 %in% stopwords_vec) %>%
+  filter(!word3 %in% stopwords_vec) %>%
+  unite(it_tokens_3w, word1, word2, word3, sep = " ") 
+
+rios_data_token3it <- rios_data_token3it %>%
+  filter(!str_detect(it_tokens_3w, paste(strings, collapse = "|")))
+
+
+#creating a DEI related column
+rios_data_token3it$dei_related = NA
+
+
+rios_data_token3it$dei_related <- sapply(rios_data_token3it$it_tokens_3w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+
+#removing the unnnecessary columns/rows
+rios_data_token3it <- rios_data_token3it[,-c(9:13)]
+
+#removing unnecessary content that doesn't make sense, however keep in mind as three words it might not make sense or be related to inclusive teaching, but in the context of a sentence it probably make sense
+
+unnecessary2 <- c("academic background identity", "academic professional backgrounds", "individuals since questions", "inclusive teaching requires", "implements inclusive teaching", "many individuals since", "must communicate collaborate", "several inclusive teaching", "abilities experimental questions", "access discussion throughout", "access faculty access", "access sample work", "access see comments", "access several learning", "access software programs", "access species database", "accommodators perceived individual", "animal communities due", "american cultures science", "author backgrounds demonstrating", "background knowledge differently", "background therefore inexpensive", "backgrounds can benefit", "backgrounds find intellectual", "backgrounds may identify", "backgrounds needs learning", "backgrounds often find", "biodiversity database schools", "biodiversity lab report", "biodiversity losses amount", "biology species identified", "bird identification resources", "broader area identified", "butterfly activity engages", "campus based access", "class individual research", "class collaboration peer", "class individual research", "clicker questions individually", "coast students connected", "collaborative effort seeks", "completed courses backgrounds", "completing individual work", "connected device instructors", "connections may result", "contribute individual data", "cultured bacteria including", "cures increase access", "current biodiversity losses", "cyverse infrastructure connected", "de identified results", "different communities may", "disabilities additionally scientific", "discussing cellular diversity", "diverse demonstrators finally", "diversity among streptomyces", "diversity dna sequence", "diversity gap additionally", "divides labor among", "drift engaging students", "dynamics inclusive learning", "engagement student appropriate", "engages multiple senses", "engaging final presentation", "engaging multiple types", "engaging multiple week", "england individual investigators", "evenly divides labor", "friendly internet connected", "genetic drift engaging", "handle cultured samples", "handling cultured bacteria", "high impact active", "ideas individual writing", "identified asset maps", "identified instructors implementing", "identified personality types", "identify possible therapeutic", "identify primer binding", "inclusion another way", "inclusion standards can", "inclusion within many", "individual choice udl", "individual clicker questions", "individual self paced", "individual pre class", "individual submissions upon", "individual writing assignments", "ndividual writing peer", "individual written report", "individually completing separate", "individually first although", "individually group work", "individually providing time", "individually select groups", "individually selected research", "individuals students work", "instructor individual exploration", "instructor individual pre", "interesting biological cultural", "internet connected device", "investigate genetic diversity", "loxp lesson inclusive", "microorganisms impact human", "might impact human", "natural abilities match", "nuclear radiation incidents", "online bird identification", "open access species", "perspectives anonymous clicker", "plant communities useful", "plant identification http", "practice sheet individually", "prefer individual work", "project biodiversify website", "public biodiversity database", "purposes open access", "pursuing bird identification", "questions individual students", "questions individually discuss", "regular individually selected", "reliable internet connectivity", "revealing identifying information", "rgs encourage individual", "seafood traceability issues", "self identified asset", "self identified personality", "serpentine plant communities", "sheet individually providing", "significantly less connected", "simple model collaboration",	"site easily accessible", "spatial ability train", 
+"species identified alternatively",	"species identified instructors", "strategies including individual", "traceability issues overall", "videos students engage", "ways first collaborative", "ways individual clicker", "ways individual self", "whether current biodiversity")
+
+#didn't include all of them here, but notice that inclusive teaching is synonmous with collaborative, working with other students (rows 123-144), being diverse, diversity (rows 198-237), and including ppl (inclusion, inclusive, including, etc.)
+
+rios_data_token3it <- rios_data_token3it %>%
+  filter(!str_detect(it_tokens_3w, paste(unnecessary2, collapse = "|")))
+
+
+#graph of the most common
+rios_data_token3it %>%
+  filter(dei_related == "TRUE") %>%
+  count(it_tokens_3w, sort = TRUE) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(it_tokens_3w, n)) %>%
+  ggplot(aes(it_tokens_3w, n)) +
+  geom_col() +
+  coord_flip() +
+  labs(y = "(DEI Related) 3 Word Count in Inclusive Teaching Text") + 
+  xlab(NULL)
+```
+
 
 ## In Depth Bar Chart of Word Count By Year {.tabset}
 
@@ -260,6 +297,12 @@ This is a bar chart that looks more in depth into the frequency of words being u
 ### 2014
 
 ```{r V2 2014, warning=FALSE}
+
+#saving for visuals on word counts, etc
+it_word_counts <- rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(Year) %>%
+  count(inclusive_teach_tokens, sort = TRUE)
 
 it_word_counts %>%
   filter(Year == 2014) %>%
@@ -374,74 +417,464 @@ it_word_counts %>%
   ylim(0,33)
 ```
 
-##  {.unnumbered}
+##  {-}
 
-```{r V3, include=FALSE}
-#Better (w/o facet wrap), but only includes \~22% of data! (b/c we filtered for n \> 5)
 
-#it_word_counts %>%
- # filter(n > 5) %>%
-  #mutate(inclusive_teach_tokens = reorder(inclusive_teach_tokens, n)) %>%
-  #ggplot(aes(inclusive_teach_tokens, n, fill = Year)) +
-  #geom_col() +
-  #coord_flip() +
-  #labs(y = "(DEI Related) Word Count in Inclusive Teaching Text") +
-  #facet_wrap(~Year)
+## Normalized Word Frequency: The Most Distinctive Words By Year {.tabset}
+
+This can help us see the "weight" of each words and the words most distinctive for each year. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term's tf-idf [the term frequency and idf multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"](https://www.tidytextmining.com/tfidf.html).
+
+For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the other DEI related words for the rest of the years. These results make sense and align with the visuals above. Because the use of these words are very low in 2014 (besides diversity and diverse which was seen more than 5 times in 2014), they have a high tf-idf statistic. These words have been used more each year.
+
+### 2014
+
+```{r norm word freq}
+
+
+#finding the most distinctive words for each document
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2014) %>%
+  top_n(40) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
 ```
 
-## 2-gram Word Analysis
+### 2015
 
-The tables and visuals above give us an idea of how often are DEI Words used and what does that say about inclusivity of the articles. However, looking at the most commonly used DEI words doesn't give us all the information on how the article is being inclusive and their definitions of it. Thus, I'll repeat the analyses I did above, but looking at phrases, specifically of 2 words. Unlike above, I looked through all the phrases and removes what I felt was unnecessary and/or didn't make sense. Below we have printed the most common DEI phrases. Although some of the phrases aren't repeated often, they show that the definition of inclusive teaching goes beyond just engaging all students.
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2015) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2015", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
 
-```{r 2-gram word analysis prep}
+```
+
+### 2016
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2016) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2016", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+```
+
+### 2017
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2017) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2017", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+
+```
+
+### 2018
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2018) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2018", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+
+```
+
+### 2019
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2019) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2019", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+
+```
+
+### 2020
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2020) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2020", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+
+```
+
+### 2021
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2021) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2021", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.095)
+
+```
+
+### 2022
+
+```{r}
+it_word_counts %>%
+  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
+  arrange(desc(tf_idf)) %>%
+  filter(Year == 2022) %>%
+  top_n(30) %>%
+  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
+  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2022", x = "DEI Related Words", y = "Word Weight (tf-idf statistic)") + ylim(0,0.095)
+
+```
+
+##  {-}
 
 
-rios_data_token2it <- rios_data %>%
-  unnest_tokens(it_tokens_2w, `Inclusive Teaching Description`, token = "ngrams", n = 2)  %>%
+## Network Plot of Word Relationship over Time {.tabset}
+
+To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words.
+
+
+### 2014
+
+```{r 2014}
+
+rios_data_token2 <- rios_data_token2it %>%
   separate(it_tokens_2w, c("word1", "word2"), sep = " ")
 
-rios_data_token2it <- rios_data_token2it %>%
-  filter(!word1 %in% stopwords_vec) %>%
-  filter(!word2 %in% stopwords_vec) %>% 
-  unite(it_tokens_2w, word1, word2, sep = " ") 
-
-rios_data_token2it <- rios_data_token2it %>%
-  filter(!str_detect(it_tokens_2w, paste(strings, collapse = "|")))
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2014) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
 
 
-#creating a DEI related column
-rios_data_token2it$dei_related = NA
+set.seed(20181005)
 
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
 
-rios_data_token2it$dei_related <- sapply(rios_data_token2it$it_tokens_2w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 
-
-#removing the unnnecessary columns/rows [doesn't make sense or not related to DEI] 
-#however keep in mind, in the context of a sentence it probably make senses, so i could be removing some important words
-
-rios_data_token2it <- rios_data_token2it[,-c(9:13)]
-
-unnecessary <- c("individually table", "individual investigators", "individual module", "individual noninteractive", "individual pre", "individual clicker", "inclusion another", "inclusion additionally", "identify species", "identify primer", "identify possible", "identified alternatively", "identification", "ideas individual", "group divide", "general inclusive", "bird identification", "yet inclusive", "variants identified", "teachers identify", "skills perspectives", "sheet individually", "residential birds", "radiation incidents", "regular individually", "pipeline cure", "plant communities", "popular culture", "personal connection", "physical connection", "perspective remind", "perspectives anonymous", "four individuals", "first collaborative", "find identify", "ever identified", "evenly divides", "ethnic economic", "ethnic given", "equity public", "england individual", "engaging final", "diverse face", "diverse natural", "diverse mixed", "direct connection", "disabilities benefit", "data individuals", "data individually", "less confident", "communities due", "collaborative yet", "collaborative easing", "collaboration using", "collaboration throughout", "class individual", "biodiversiy lab", "biodiversity losses", "backgrounds may", "backgrounds find", "backgrounds furthermore", "backgrounds therefore", "area identified", "answer individually", "agricultural sciences", "ability train", "ability moreover", "abilities match", "questions individually", "individuals turn", "individuals since", "communicate collaborate", "backgrounds throughout", "access see", "ada accessibility", "de identified", "efficacy identity", "individualactors may")
-
-rios_data_token2it <- rios_data_token2it %>%
-  filter(!str_detect(it_tokens_2w, paste(unnecessary, collapse = "|")))
-
-#most common DEI words
-rios_2w_count <- rios_data_token2it %>%
-  filter(dei_related == "TRUE") %>%
-  count(it_tokens_2w, sort = TRUE) 
-
-
-#graph of that 
-rios_2w_count %>%
-  top_n(30) %>%
-  mutate(it_tokens_2w = reorder(it_tokens_2w, n)) %>%
-  ggplot(aes(it_tokens_2w, n)) +
-  geom_col() +
-  coord_flip() +
-  labs(y = "(DEI Related) 2 Word Count in Inclusive Teaching Text") + 
-  xlab(NULL)
 ```
+
+### 2015
+
+```{r 2015}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2015) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2016
+
+```{r 2016}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2016) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2017
+
+```{r 2017}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2017) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2018
+
+```{r 2018}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2018) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2019
+
+```{r 2019}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2019) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2020
+
+```{r 2020}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2020) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2021
+
+```{r 2021}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2021) %>%
+  count(word1, word2, sort = TRUE) %>%  
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+### 2022
+
+```{r 2022}
+
+rios_data_token2 <- rios_data_token2it %>%
+  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
+
+rios_phrase_network <- rios_data_token2 %>% 
+  filter(dei_related == TRUE & Year == 2022) %>%
+  count(word1, word2, sort = TRUE) %>% 
+  graph_from_data_frame()
+
+
+set.seed(20181005)
+
+a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
+
+ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
+    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+## {-}
+
+
+# Exploratory Data Analysis: The Most DEI Related Content 
+
+## Which articles and years has the highest proportion of DEI related words? How does this proportion change?
+
+Looking at proportions gives us an idea of how many DEI words are being used and if there is a change over time. However, keep in mind that a lower proportion of DEI words doesn't necessarily mean that the article isn't being inclusive. Additionally, since we're grouping the data by year and article, the total DEI words for each year and article will be higher than 118, as some words are used in multiple years/articles.
+
+I've calculated the number of DEI related words for each article and year. Then, I divided those numbers by the total amount of words for each article and year to get a proportion. Even though we have a word count column, I used the cleaned data frame `rios_data_tokenizedit` to calculate the total amount of words, thus the proportions may be an overestimate. Although the number of DEI related words is increasing each year, based on the graph below the proportions are decreasing.
+
+```{r Proportion of DEI Words}
+#totaldei for each year
+totaldeiyear <- it_word_counts %>%
+  summarise(totaldeiy = n()) 
+
+#totaldei for each article, only 251 obs, so some articles don't have any dei related words (30 articles with no Inclusive Teaching Section...)
+totaldeiarticle <- rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(article_num, Year) %>%
+  count(inclusive_teach_tokens) %>%
+  summarise(totaldeia = n()) 
+
+#total words in each year
+totalwordsyear <- rios_data_tokenizedit %>%
+  group_by(Year) %>%
+  count(inclusive_teach_tokens, sort = TRUE)  %>%
+  summarise(totaly = n())
+
+#total words in each article, 
+totalwordsarticle <-  rios_data_tokenizedit %>%
+  group_by(article_num) %>%
+  count(inclusive_teach_tokens, sort = TRUE)  %>%
+  summarise(totala = n())
+  
+
+#proportions for each year, fluctuating 
+totaldeiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly) %>%
+  ggplot(aes(Year, ratio)) +
+  geom_line() +
+  ylim(0,0.053) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
+```
+
+The low proportions in the years 2019-2022 could also be because there were simply way more words those years, as the table below presents:
+
+```{r}
+
+totaldeiyear %>%
+  full_join(totalwordsyear, by = c("Year")) %>%
+  mutate(ratio = totaldeiy/totaly)
+
+```
+
+
+I decided to group by article number as well for a better, more detailed look at the changes in the proportions. Because we're looking at the proportions by article the proportions are higher on this graph. Regardless, we can see a trend of the proportions decreasing here as well, with 2014 having the highest proportions. However, articles 34 (in Year 2022), 78 (in Year 2021), and 160 (in Year 2019) have some of the highest proportions as well. Notice for articles 120, 171, 197, 220, and 242 there are no diversity related words and that's why there are "blanks" in the graph.
+
+```{r Proportion of DEI Words 2}
+
+#proportions for each article, also fluctuating (higher article # means it happened earlier ex: article # 270 = year 2014)
+totaldeiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/totala) %>%
+  arrange(article_num) %>%
+  ggplot(aes(article_num, ratio, color = Year)) +
+  geom_line() +
+  #ylim(0,0.053) +
+  labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Article Number", subtitle = "(in the 'Inclusive Teaching' Section)", x = "Article Number") +
+  geom_smooth(method=lm, se=FALSE) + 
+  scale_color_gradientn(colours = rainbow(9))
+
+# rios_data_tokenizedit %>%
+#   filter(article_num %in% c(120,171,197,220,242)) %>%
+#   select(1,4,8:11)
+
+
+```
+
+Here's another visualization of what's presented above, but as a box plot. It's interesting to see this and range for 2018, especially considering the number of observations (of ratios) that we have per year (in the table beneath the graph).
+
+```{r}
+
+df1 <- totaldeiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/totala) %>%
+  group_by(Year)
+
+  boxplot(ratio ~ df1$Year, df1, xlab = "Article Number", ylab = "Ratio", main = "The Ratio of DEI Related Words to Total Words Over Time", horizontal = FALSE) 
+
+
+df1 %>%
+  count(Year, sort = TRUE)  
+  
+```
+
+## Which articles and years has the highest proportion of DEI related *phrases*? How does this proportion change?
 
 When we look at the proportion of DEI *phrases* by year, they're increasing unlike the trends we saw above. 
 
@@ -503,61 +936,18 @@ total2deiarticle %>%
 
 
 
-```
+
+df2 <- total2deiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/totala) %>%
+  group_by(Year)
+
+  boxplot(df2$ratio ~ df2$Year, df1, xlab = "Year", ylab = "Ratio", main = "The Ratio of DEI Related Phrases (of 2 words) to Total Words Over Time", horizontal = FALSE) 
 
 
-## 3 gram Word Analysis
+df2 %>%
+  count(Year, sort = TRUE) 
 
-I also did a 3 gram word Analysis, which has a much a lower frequency. However, this gives us a better idea of what "inclusive teaching" means in these contexts.
-
-```{r 3gwa}
-
-## plot the frequency
-rios_data_token3it <- rios_data %>%
-  unnest_tokens(it_tokens_3w, `Inclusive Teaching Description`, token = "ngrams", n = 3)  %>%
-  separate(it_tokens_3w, c("word1", "word2", "word3"), sep = " ")
-
-rios_data_token3it <- rios_data_token3it %>%
-  filter(!word1 %in% stopwords_vec) %>%
-  filter(!word2 %in% stopwords_vec) %>%
-  filter(!word3 %in% stopwords_vec) %>%
-  unite(it_tokens_3w, word1, word2, word3, sep = " ") 
-
-rios_data_token3it <- rios_data_token3it %>%
-  filter(!str_detect(it_tokens_3w, paste(strings, collapse = "|")))
-
-
-#creating a DEI related column
-rios_data_token3it$dei_related = NA
-
-
-rios_data_token3it$dei_related <- sapply(rios_data_token3it$it_tokens_3w, function(x) any(sapply(dei_keywords, str_detect, string = x)))
-
-
-#removing the unnnecessary columns/rows
-rios_data_token3it <- rios_data_token3it[,-c(9:13)]
-
-#removing unnecessary content that doesn't make sense, however keep in mind as three words it might not make sense or be related to inclusive teaching, but in the context of a sentence it probably make sense
-
-unnecessary2 <- c("academic background identity", "academic professional backgrounds", "individuals since questions", "inclusive teaching requires", "implements inclusive teaching", "many individuals since", "must communicate collaborate", "several inclusive teaching", "abilities experimental questions", "access discussion throughout", "access faculty access", "access sample work", "access see comments", "access several learning", "access software programs", "access species database", "accommodators perceived individual", "animal communities due", "american cultures science", "author backgrounds demonstrating", "background knowledge differently", "background therefore inexpensive", "backgrounds can benefit", "backgrounds find intellectual", "backgrounds may identify", "backgrounds needs learning", "backgrounds often find", "biodiversity database schools", "biodiversity lab report", "biodiversity losses amount", "biology species identified", "bird identification resources", "broader area identified", "butterfly activity engages", "campus based access", "class individual research", "class collaboration peer", "class individual research", "clicker questions individually", "coast students connected", "collaborative effort seeks", "completed courses backgrounds", "completing individual work", "connected device instructors", "connections may result", "contribute individual data", "cultured bacteria including", "cures increase access", "current biodiversity losses", "cyverse infrastructure connected", "de identified results", "different communities may", "disabilities additionally scientific", "discussing cellular diversity", "diverse demonstrators finally", "diversity among streptomyces", "diversity dna sequence", "diversity gap additionally", "divides labor among", "drift engaging students", "dynamics inclusive learning", "engagement student appropriate", "engages multiple senses", "engaging final presentation", "engaging multiple types", "engaging multiple week", "england individual investigators", "evenly divides labor", "friendly internet connected", "genetic drift engaging", "handle cultured samples", "handling cultured bacteria", "high impact active", "ideas individual writing", "identified asset maps", "identified instructors implementing", "identified personality types", "identify possible therapeutic", "identify primer binding", "inclusion another way", "inclusion standards can", "inclusion within many", "individual choice udl", "individual clicker questions", "individual self paced", "individual pre class", "individual submissions upon", "individual writing assignments", "ndividual writing peer", "individual written report", "individually completing separate", "individually first although", "individually group work", "individually providing time", "individually select groups", "individually selected research", "individuals students work", "instructor individual exploration", "instructor individual pre", "interesting biological cultural", "internet connected device", "investigate genetic diversity", "loxp lesson inclusive", "microorganisms impact human", "might impact human", "natural abilities match", "nuclear radiation incidents", "online bird identification", "open access species", "perspectives anonymous clicker", "plant communities useful", "plant identification http", "practice sheet individually", "prefer individual work", "project biodiversify website", "public biodiversity database", "purposes open access", "pursuing bird identification", "questions individual students", "questions individually discuss", "regular individually selected", "reliable internet connectivity", "revealing identifying information", "rgs encourage individual", "seafood traceability issues", "self efficacy identity", "self identified asset", "self identified personality", "serpentine plant communities", "sheet individually providing", "significantly less connected", "simple model collaboration",	"site easily accessible", "spatial ability train", 
-"species identified alternatively",	"species identified instructors", "strategies including individual", "traceability issues overall", "videos students engage", "ways first collaborative", "ways individual clicker", "ways individual self", "whether current biodiversity")
-#didn't include all of them here, but notice that inclusive teaching is synonmous with collaborative, working with other students (rows 123-144), being diverse, diversity (rows 198-237), and including ppl (inclusion, inclusive, including, etc.)
-
-rios_data_token3it <- rios_data_token3it %>%
-  filter(!str_detect(it_tokens_3w, paste(unnecessary2, collapse = "|")))
-
-
-#graph of the most common
-rios_data_token3it %>%
-  filter(dei_related == "TRUE") %>%
-  count(it_tokens_3w, sort = TRUE) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(it_tokens_3w, n)) %>%
-  ggplot(aes(it_tokens_3w, n)) +
-  geom_col() +
-  coord_flip() +
-  labs(y = "(DEI Related) 3 Word Count in Inclusive Teaching Text") + 
-  xlab(NULL)
 ```
 
 Just like the DEI phrases of 2 words, we can see that the proportions are increasing every year, with the highest proportion in 2020!
@@ -601,6 +991,8 @@ total3deiyear %>%
   geom_line() +
   ylim(0,0.143) +
   labs(y = "Ratio", title = "The Ratio of DEI Related Phrases (3 Words) to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
+
+
 ```
 
 There are a lot of breaks in our graph compared to the other two graphs, but this showcases a trend of the proportion decreasing. However notice the outliers in 2018/2019 are consistent with our findings from the bar chart of the most common words each year (which sparked in 2019).
@@ -620,218 +1012,24 @@ total3deiarticle %>%
 
 
 
-```
+df3 <- total3deiarticle %>%
+  full_join(totalwordsarticle, by = c("article_num")) %>%
+  mutate(ratio = totaldeia/totala) %>%
+  group_by(Year)
 
-## Network Plot of Word Relationship
-
-To get a deeper understanding of how inclusive teaching is viewed, we will be creating a network plot to look at the relationship between words/phrases in the inclusive teaching section. The generated `igraph` graph is called `rios_phrase_network`. It has 41 words and 36 connections among them. Similar to what some of our graphs have portrayed above, the words "inclusive", "students", and "diverse" are connected to many other words.
-
-```{r}
-
-rios_data_token2 <- rios_data_token2it %>%
-  separate(it_tokens_2w, c("word1", "word2"), sep = " ")
-
-rios_phrase_network <- rios_data_token2 %>% 
-  filter(dei_related == TRUE) %>%
-  count(word1, word2, sort = TRUE) %>% 
-  filter(n > 3) %>% 
-  graph_from_data_frame()
+  boxplot(df3$ratio ~ df3$Year, df1, xlab = "Year", ylab = "Ratio", main = "The Ratio of DEI Related Phrases (of 3 words) to Total Words Over Time", horizontal = FALSE) 
 
 
-set.seed(20181005)
+df3 %>%
+  count(Year, sort = TRUE) 
 
-a <- arrow(angle = 30, length = unit(0.1, "inches"), ends = "last", type = "open")
-
-ggraph(rios_phrase_network, layout = "fr") + geom_edge_link(aes(color = n, width = n), arrow = a) + 
-    geom_node_point() + geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 
 ```
 
-## Normalized Word Frequency: The Most Distinctive Words By Year {.tabset}
-
-This can help us see the "weight" of each words and the words most distinctive for each year and article. Here we're printing the idf, which is the ["inverse document frequency, which decreases the weight for commonly used words and increases the weight for words that are not used very much in a collection of documents. This can be combined with term frequency to calculate a term's tf-idf [the term frequency and idf multiplied together], the frequency of a term adjusted for how rarely it is used. The statistic tf-idf is intended to measure how important a word is to a document in a collection (or corpus) of documents, for example, to one novel in a collection of novels or to one website in a collection of websites"](https://www.tidytextmining.com/tfidf.html).
-
-For comparisons purposes, the y axis has the same limits for all the graphs, where we can see that the words "cultured" and disengaged" are the most distinct words compared to the other DEI related words for the rest of the years. These results make sense and align with the visuals above. Because the use of these words are very low in 2014 (besides diversity and diverse which was seen more than 5 times in 2014), they have a high tf-idf statistic. These words have been used more each year.
-
-### 2014
-
-```{r norm word freq}
-
-
-#finding the most distinctive words for each document
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2014) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") 
-```
-
-### 2015
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2015) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2015", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2016
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2016) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2016", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-```
-
-### 2017
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2017) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2017", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2018
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2018) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2018", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2019
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2019) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2019", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2020
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2020) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2020", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2021
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2021) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2021", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-### 2022
-
-```{r}
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf_idf)) %>%
-  filter(Year == 2022) %>%
-  top_n(30) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2022", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") + ylim(0,0.94)
-
-```
-
-##  {-}
-
-The graph below is the same as the ones above, with all of the Years on one graph for comparison, however, some of the weights are higher for Years 2016, 2017, and 2018, however that's not present above...
-
-```{r}
-
-it_word_counts %>%
-  bind_tf_idf(inclusive_teach_tokens, Year, n) %>%
-  arrange(desc(tf-idf)) %>%
-  mutate(it_tokens_3w = reorder(inclusive_teach_tokens,tf_idf)) %>%
-  top_n(15) %>%
-  ggplot(aes(inclusive_teach_tokens, tf_idf)) +
-  geom_bar(stat = "identity", show.legend = FALSE) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  labs(title = "(DEI Related) Normalized Word Frequency in Inclusive Teaching Text in 2014", x = "DEI Related Words", y = "Word Weight (tf-idf statistic") +
-  facet_wrap(~Year)
-
-#by article num
-# rios_data_tokenizedit %>%
-#   filter(dei_relatedit == "TRUE") %>%
-#   group_by(article_num, Year) %>%
-#   count(inclusive_teach_tokens, sort = TRUE) %>%
-#   bind_tf_idf(inclusive_teach_tokens, article_num, n) %>%
-#   arrange(desc(tf_idf))
-
-```
-
-Maybe track the use of certain words over time ?
-
-Analysis of the two articles of their other sections...?
 
 ## Correlation between Keyword Themes and Inclusive Teahing Text!?
 
-I created a data frame of just articles with a keyword that's DEI related. Given that a keyword is DEI related, 4% of inclusive teaching words is also DEI related (67 out of 1,612 words). Higher correlation compared to 2.6%.
+I created a data frame of just articles with a keyword that's DEI related. Given that a keyword is DEI related, 4% of inclusive teaching words is also DEI related (67 out of 1,612 words), (compared to 2.6%) with many of the same most common words
 
 ```{r}
 unnecessarykt <- c("probability", "reliability", "heritability", "employability", "aquaculture", "extracellular") #should I add biodiversity here?
@@ -847,13 +1045,20 @@ df <- rios_data_tokenizedkt %>%
 #most common DEI words, out of 67 (out of 1,612 words, 4% are DEI)
 df %>%
   filter(dei_relatedit == "TRUE") %>%
-  count(inclusive_teach_tokens, sort = TRUE)  
+  count(inclusive_teach_tokens, sort = TRUE)
+
+
+
 
 ```
 
+Other Analysis Ideas:
 
+Maybe track the use of certain words over time ?
 
-analysis of whehter keywords themes is correlated with more DEI related words in the inclusive teaching text.
+Analysis of the two articles of their other sections...?
+
+analysis of whether keywords themes is correlated with more DEI related words in the inclusive teaching text?
 
 # Discussion
 
