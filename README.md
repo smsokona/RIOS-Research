@@ -1,0 +1,2 @@
+# RIOS-Research
+My name is Sokona Mangange. As a Student Advisor and Research Assistant for the Institute for a Racially Just, Inclusive, and Open STEM Education [(RIOS) Institute](https://qubeshub.org/community/groups/rios) , I am conducting a computational text analysis of STEM Open Education Resources (OER), specifically of the website [CourseSource](https://qubeshub.org/community/groups/coursesource/). You can view my most updated work [here](https://raw.githack.com/smsokona/RIOS-Research/master/TextAnalysisEDA.html)!
