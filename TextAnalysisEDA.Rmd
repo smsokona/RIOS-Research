@@ -35,6 +35,8 @@ Here, I've imported the excel data set and necessary packages for analysis. I al
 # install.packages("reshape2")
 # install.packages("ggraph")
 #install.packages("kableExtra")
+
+#loading necessary packages
 library(varhandle)
 library(ggraph)
 library(igraph)
@@ -47,9 +49,15 @@ library(stopwords)
 library(wordcloud)
 library(reshape2)
 library(kableExtra)
+
+#importing dataset and DEI words list
 rios_data <- read_csv("RIOS Research - Course Source - Sheet1 2.csv")
 dei_keywords <- read_csv("SJEDI_words 2022-12-20 18_03_42.csv")
+
+#human error
 rios_data$`Inclusive Teaching  included?`[12] = "No"
+
+#arranging year
 rios_data <- rios_data %>%
   arrange(desc(Year))
 ```
@@ -67,6 +75,8 @@ for (x in 1:13){
 rios_data$article_num <- c(nrow(rios_data):1)
 
 ```
+
+
 
 Here, each word from the `Inlcusive Teaching Description` and `keyword themes` is "un-nested" into it's own row and any unnecessary punctuation, numbers and words are removed. I saved each of these in their own new dataframes for analysis.
 
@@ -131,6 +141,30 @@ rios_data_tokenizedkt <- rios_data_tokenizedkt[,-c(9:13)]
 
 ```
 
+Data Cleaning Check
+
+```{r}
+#allwords <- unique(rios_data_tokenizedit$inclusive_teach_tokens)
+#uniquedeirelated <- sapply(allwords, function(x) any(sapply(dei_keywords, str_detect, string = x)))
+
+uniquedei <- cbind(allwords,uniquedeirelated)
+
+#write_csv(as.data.frame(uniquedeirelated), "DEIRelated.csv")
+
+#write as csv for below
+# rios_data %>%
+#   select(1:9,12,15) %>%
+#   write_csv("RIOS_df")
+# 
+rios_data_tokenizedit %>%
+  filter(inclusive_teach_tokens == "conversation") %>%
+  count(article_num)
+# 
+# rios_data %>% 
+#   select(8) %>% 
+#   filter(rios_data$article_num == 286) 38, 200, 206, 207, 278 vs 38, 207, 267, 278 (female vs male)
+
+```
 # Exploratory Data Analysis: Word Count
 
 ## Word Count of Inclusive Teaching Text Over Time Box Plot
