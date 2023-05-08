@@ -382,27 +382,34 @@ This is a bar chart that looks more in depth into the frequency of words being u
 ```{r}
 # Below is just the code to print all 9 years into one table
 
-# it_word_counts %>% 
-#   # filter(Year != 2018) %>% 
-#   filter(n > 1) %>% #41.58 of data
-#   ggplot(aes(inclusive_teach_tokens, n)) + 
-#   geom_col() + 
-#  #geom_text(aes(label = inclusive_teach_tokens), vjust = -0.5, size = 1, nudge_y = 1) +
-#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-#   facet_wrap(~Year, ncol = 2) +
-#   ylim(0,33) +
-#   labs(title = "(DEI Related) Word Frequency Over Time", x = "(DEI Related) Word", y = "Word Count in Inclusive Teaching Text") +
-#    ## reduce spacing between labels and bars
-#   scale_x_discrete(expand = c(.01, .01)) +
-#   scale_fill_identity(guide = "none") +
-#   ## get rid of all elements except y axis labels + adjust plot margin +
-#   theme(axis.text.y = element_text(size = 14, hjust = 1, family = "Fira Sans"),
-#         plot.margin = margin(rep(15, 4)))
+#saving for visuals on word counts, etc
+it_word_counts <- rios_data_tokenizedit %>%
+  filter(dei_relatedit == "TRUE") %>%
+  group_by(Year) %>%
+  count(inclusive_teach_tokens, sort = TRUE)
 
 
-# it_word_counts %>% 
-#   ungroup(Year) %>% 
-#   count(n) %>% 
+it_word_counts %>%
+  # filter(Year != 2018) %>%
+  filter(n > 1) %>% #41.58 of data
+  ggplot(aes(inclusive_teach_tokens, n)) +
+  geom_col() +
+ #geom_text(aes(label = inclusive_teach_tokens), vjust = -0.5, size = 1, nudge_y = 1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~Year, ncol = 2) +
+  ylim(0,33) +
+  labs(title = "(DEI Related) Word Frequency Over Time", x = "(DEI Related) Word", y = "Word Count in Inclusive Teaching Text") +
+   ## reduce spacing between labels and bars
+  scale_x_discrete(expand = c(.01, .01)) +
+  scale_fill_identity(guide = "none") +
+  ## get rid of all elements except y axis labels + adjust plot margin +
+  theme(axis.text.y = element_text(size = 14, hjust = 1, family = "Fira Sans"),
+        plot.margin = margin(rep(15, 4)))
+
+
+# it_word_counts %>%
+#   ungroup(Year) %>%
+#   count(n) %>%
 #   mutate(percent = (nn/416)*100)
   
 
@@ -412,12 +419,6 @@ This is a bar chart that looks more in depth into the frequency of words being u
 ### 2014
 
 ```{r V2 2014, warning=FALSE}
-
-#saving for visuals on word counts, etc
-it_word_counts <- rios_data_tokenizedit %>%
-  filter(dei_relatedit == "TRUE") %>%
-  group_by(Year) %>%
-  count(inclusive_teach_tokens, sort = TRUE)
 
 it_word_counts %>%
   filter(Year == 2014) %>%
@@ -1053,7 +1054,7 @@ totaldeiyear %>%
   mutate(ratio = totaldeiy/totaly) %>%
   ggplot(aes(Year, ratio)) +
   geom_line() +
-  ylim(0,0.053) +
+  #ylim(0,0.053) +
   labs(y = "Ratio", title = "The Ratio of DEI Related Words to Total Words By Year", subtitle = "(in the 'Inclusive Teaching' Section)")
 ```
  
